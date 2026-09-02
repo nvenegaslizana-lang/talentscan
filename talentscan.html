@@ -957,11 +957,14 @@ function norm(t) {
 
 const DESC_STOPWORDS = new Set(['para','como','este','esta','estos','estas','entre','sobre','sera','seran','tiene','tienen','deben','debe','desde','hasta','cuando','donde','quien','cuales','cual','todo','toda','todos','todas','otro','otra','otros','otras','tambien','cada','sino','pero','porque','segun','ademas','dentro','fuera','durante','mediante','mismo','misma','mismos','mismas','solo','sola','solos','solas','muy','mas','menos','poco','pocos','mucho','muchos','buena','buen','bueno','buenos','general','generales','area','areas','trabajo','trabajos','cargo','cargos','empresa','empresas','equipo','equipos','persona','personas','forma','parte','partes','nivel','niveles','proceso','procesos','puesto','puestos','funcion','funciones','contexto','objetivo','objetivos','responsable','responsables','requisito','requisitos','experiencia','conocimiento','conocimientos','habilidad','habilidades','capacidad','capacidades']);
 
+function stem(w) {
+  return w.length > 6 ? w.slice(0, 6) : w;
+}
 function extractKeywords(text) {
   const n = norm(text);
   const words = n.match(/[a-z]{4,}/g) || [];
   const uniq = [];
-  words.forEach(w => { if (!DESC_STOPWORDS.has(w) && !uniq.includes(w)) uniq.push(w); });
+  words.forEach(w => { if (!DESC_STOPWORDS.has(w)) { const s = stem(w); if (!uniq.includes(s)) uniq.push(s); } });
   return uniq.slice(0, 40);
 }
 
