@@ -1,0 +1,1570 @@
+<title>TalentScan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..60,400;12..60,500;12..60,600;12..60,700&family=Inter:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+:root {
+  --bg:#F8F7FF;--surface:#FFFFFF;--card:#F0EEFE;--border:#DDD8F4;
+  --accent:#6D28D9;--accent-lt:#EDE9FE;--txt:#1C1429;--txt-2:#6B5E86;
+  --success:#059669;--warn:#D97706;--danger:#DC2626;--cyan:#0891B2;
+  --sid-bg:#1E1B4B;--sid-txt:#C4B5FD;--sid-hover:#2D2A6E;--r:10px;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C0A1C;--surface:#15112A;--card:#1E1935;--border:#2D2850;
+  --accent:#7C3AED;--accent-lt:#2D2050;--txt:#EDE9FE;--txt-2:#9D8FBE;
+  --success:#10B981;--warn:#F59E0B;--danger:#EF4444;--cyan:#22D3EE;
+}}
+:root[data-theme="dark"]{
+  --bg:#0C0A1C;--surface:#15112A;--card:#1E1935;--border:#2D2850;
+  --accent:#7C3AED;--accent-lt:#2D2050;--txt:#EDE9FE;--txt-2:#9D8FBE;
+  --success:#10B981;--warn:#F59E0B;--danger:#EF4444;--cyan:#22D3EE;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.6}
+h1,h2,h3,h4{font-family:'Bricolage Grotesque',sans-serif;text-wrap:balance}
+button{cursor:pointer;font-family:inherit}
+input,textarea,select{font-family:inherit}
+a{color:var(--accent)}
+
+/* LAYOUT */
+#recruiter-view{display:flex;min-height:100vh}
+#candidate-view{display:none;min-height:100vh;background:var(--bg)}
+
+/* SIDEBAR */
+#sidebar{width:240px;min-height:100vh;background:var(--sid-bg);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0}
+.sid-logo{padding:24px 20px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sid-logo-icon{width:34px;height:34px;background:var(--accent);border-radius:8px;display:grid;place-items:center;font-size:18px}
+.sid-logo-name{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:18px;color:#fff;letter-spacing:-.3px}
+.sid-logo-name span{color:var(--sid-txt)}
+.sid-section-label{padding:20px 20px 6px;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:rgba(196,181,253,.4)}
+.sid-nav{padding:4px 12px;display:flex;flex-direction:column;gap:2px}
+.sid-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:var(--sid-txt);font-size:14px;font-weight:500;cursor:pointer;transition:background .15s;border:none;background:transparent;text-align:left;width:100%}
+.sid-item:hover{background:var(--sid-hover)}
+.sid-item.active{background:var(--accent);color:#fff}
+.sid-item.done{color:rgba(196,181,253,.6)}
+.sid-item.done .sid-step-num{background:var(--success);color:#fff}
+.sid-item.locked{opacity:.4;cursor:not-allowed}
+.sid-dot{width:8px;height:8px;border-radius:50%;background:rgba(196,181,253,.3);flex-shrink:0;transition:background .2s}
+.sid-step-num{width:22px;height:22px;border-radius:50%;background:rgba(196,181,253,.15);display:grid;place-items:center;font-size:11px;font-weight:600;flex-shrink:0;color:var(--sid-txt)}
+.sid-item.active .sid-step-num{background:rgba(255,255,255,.25);color:#fff}
+.sid-footer{margin-top:auto;padding:16px 20px;border-top:1px solid rgba(255,255,255,.08)}
+.theme-toggle{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--sid-txt);padding:7px 12px;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;transition:background .15s;width:100%}
+.theme-toggle:hover{background:rgba(255,255,255,.1)}
+
+/* MAIN */
+#main-content{flex:1;padding:40px 48px;max-width:960px;overflow-y:auto}
+.screen{display:none}
+.screen.active{display:block;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.screen.active{animation:none}}
+
+/* HEADERS */
+.page-eyebrow{font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.page-title{font-size:28px;font-weight:700;color:var(--txt);margin-bottom:6px;letter-spacing:-.4px}
+.page-sub{font-size:15px;color:var(--txt-2);margin-bottom:32px}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:20px}
+.card-title{font-family:'Bricolage Grotesque',sans-serif;font-size:15px;font-weight:600;margin-bottom:16px;color:var(--txt);display:flex;align-items:center;gap:8px}
+.card-title-icon{width:28px;height:28px;background:var(--accent-lt);border-radius:6px;display:grid;place-items:center;font-size:14px}
+
+/* FORMS */
+.form-row{margin-bottom:18px}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+label{display:block;font-size:13px;font-weight:600;color:var(--txt-2);margin-bottom:6px;letter-spacing:.2px}
+input[type="text"],input[type="number"],input[type="email"],select,textarea{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:7px;background:var(--bg);color:var(--txt);font-size:14px;transition:border-color .15s,box-shadow .15s;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(109,40,217,.12)}
+textarea{resize:vertical;min-height:90px}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B5E86' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+
+/* TAGS */
+.tags-wrap{display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1.5px solid var(--border);border-radius:7px;background:var(--bg);min-height:44px;cursor:text;transition:border-color .15s}
+.tags-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(109,40,217,.12)}
+.tag{display:flex;align-items:center;gap:5px;background:var(--accent-lt);color:var(--accent);padding:3px 8px 3px 10px;border-radius:20px;font-size:13px;font-weight:500}
+.tag-x{cursor:pointer;opacity:.6;font-size:15px;line-height:1;padding:0 2px;border:none;background:none;color:inherit}
+.tag-x:hover{opacity:1}
+.tag-input{border:none;background:transparent;outline:none;font-size:14px;color:var(--txt);flex:1;min-width:120px;padding:2px 4px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;border:none;transition:all .15s;cursor:pointer}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-secondary{background:var(--card);color:var(--txt);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--border)}
+.btn-success{background:var(--success);color:#fff}
+.btn-danger{background:rgba(220,38,38,.1);color:var(--danger);border:1px solid rgba(220,38,38,.2)}
+.btn-sm{padding:6px 14px;font-size:13px}
+.btn-lg{padding:13px 28px;font-size:15px;border-radius:10px}
+
+/* SCORES */
+.scores-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.score-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;text-align:center}
+.score-circle-wrap{display:flex;justify-content:center;margin-bottom:10px}
+.score-circle{position:relative;width:80px;height:80px}
+.score-circle svg{transform:rotate(-90deg)}
+.score-circle-bg{fill:none;stroke:var(--border);stroke-width:6}
+.score-circle-fill{fill:none;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
+.score-num{position:absolute;inset:0;display:grid;place-items:center;font-family:'Bricolage Grotesque',sans-serif;font-size:20px;font-weight:700;color:var(--txt)}
+.score-label{font-size:12px;font-weight:600;color:var(--txt-2);text-transform:uppercase;letter-spacing:.8px}
+
+/* PROGRESS */
+.progress-row{margin-bottom:12px}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.progress-name{font-size:13px;font-weight:500;color:var(--txt)}
+.progress-pct{font-size:13px;font-weight:600;color:var(--txt-2);font-variant-numeric:tabular-nums}
+.progress-track{height:8px;background:var(--card);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;transition:width .6s ease}
+
+/* SKILL PILLS */
+.skills-found,.skills-missing{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.skill-pill{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500}
+.skill-pill.found{background:rgba(5,150,105,.12);color:var(--success)}
+.skill-pill.missing{background:rgba(220,38,38,.1);color:var(--danger)}
+
+/* UPLOAD */
+.upload-area{border:2px dashed var(--border);border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:var(--bg);margin-bottom:14px;user-select:none}
+.upload-area:hover,.upload-area.drag-over{border-color:var(--accent);background:var(--accent-lt)}
+.upload-area-icon{font-size:32px;margin-bottom:8px}
+.upload-area p{color:var(--txt-2);font-size:14px;margin-bottom:4px}
+.upload-link{color:var(--accent);font-weight:600;text-decoration:underline}
+.upload-status{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--accent-lt);border:1px solid var(--accent);border-radius:8px;margin-bottom:12px;font-size:13px;font-weight:500;color:var(--txt)}
+.upload-status-x{margin-left:auto;cursor:pointer;font-size:16px;color:var(--txt-2);border:none;background:none;line-height:1}
+.upload-status-x:hover{color:var(--danger)}
+.or-divider{display:flex;align-items:center;gap:12px;color:var(--txt-2);font-size:12px;text-transform:uppercase;letter-spacing:.8px;margin:14px 0 10px}
+.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* MISC */
+.divider{border:none;border-top:1px solid var(--border);margin:28px 0}
+.section-checks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.section-check{display:flex;align-items:center;gap:8px;font-size:13px}
+.rec-badge{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:8px;font-weight:700;font-size:15px;margin-bottom:12px}
+.rec-high{background:rgba(5,150,105,.12);color:var(--success)}
+.rec-mid{background:rgba(8,145,178,.1);color:var(--cyan)}
+.rec-review{background:rgba(215,119,6,.1);color:var(--warn)}
+.rec-low{background:rgba(220,38,38,.1);color:var(--danger)}
+.disc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.disc-type{background:var(--card);border-radius:8px;padding:14px;display:flex;align-items:flex-start;gap:12px}
+.disc-letter{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;font-family:'Bricolage Grotesque',sans-serif;font-size:18px;font-weight:700;color:#fff;flex-shrink:0}
+.disc-D{background:#DC2626}.disc-I{background:#D97706}.disc-S{background:#059669}.disc-C{background:#0891B2}
+.disc-info{flex:1;min-width:0}
+.disc-name{font-size:13px;font-weight:600;margin-bottom:4px}
+.disc-pct{font-size:22px;font-weight:700;font-family:'Bricolage Grotesque',sans-serif;margin-bottom:4px}
+.disc-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:6px}
+.disc-bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.info-row:last-child{border:none}
+.info-row-key{font-size:13px;color:var(--txt-2)}
+.info-row-val{font-size:13px;font-weight:600}
+.report-header{background:linear-gradient(135deg,var(--sid-bg) 0%,#3730A3 100%);border-radius:14px;padding:28px 32px;color:#fff;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.report-header-info h2{font-size:22px;margin-bottom:4px}
+.report-header-info p{font-size:14px;opacity:.7}
+.report-overall{text-align:center;background:rgba(255,255,255,.1);border-radius:12px;padding:16px 24px;min-width:120px}
+.report-overall-num{font-size:40px;font-weight:700;line-height:1}
+.report-overall-lbl{font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.empty-state{text-align:center;padding:48px 20px;color:var(--txt-2)}
+.empty-state-icon{font-size:36px;margin-bottom:12px}
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-success{background:rgba(5,150,105,.12);color:var(--success)}
+.badge-warn{background:rgba(215,119,6,.12);color:var(--warn)}
+.badge-danger{background:rgba(220,38,38,.1);color:var(--danger)}
+.badge-info{background:rgba(8,145,178,.1);color:var(--cyan)}
+.flex-end{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
+.hint{font-size:12px;color:var(--txt-2);margin-top:5px}
+.cv-area{min-height:120px;font-size:13px;line-height:1.7}
+
+/* RANKING TABLE */
+.rank-table{width:100%;border-collapse:collapse}
+.rank-table th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--txt-2);padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);background:var(--card)}
+.rank-table td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:middle}
+.rank-table tr:last-child td{border-bottom:none}
+.rank-table tr:hover td{background:var(--accent-lt)}
+.rank-num{width:28px;height:28px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--txt-2)}
+.rank-num.gold{background:#FEF3C7;border-color:#F59E0B;color:#B45309}
+.rank-num.silver{background:#F1F5F9;border-color:#94A3B8;color:#475569}
+.rank-num.bronze{background:#FEF0E7;border-color:#F97316;color:#9A3412}
+.compat-bar-wrap{width:100px}
+.compat-bar{height:6px;background:var(--card);border-radius:3px;overflow:hidden;margin-top:4px}
+.compat-bar-fill{height:100%;border-radius:3px}
+.cand-check{width:18px;height:18px;cursor:pointer;accent-color:var(--accent)}
+.cand-name-cell{font-weight:600;color:var(--txt)}
+
+/* LINK CARDS */
+.link-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px}
+.link-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.link-card-name{font-weight:700;font-size:16px}
+.link-url-box{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 14px;font-family:monospace;font-size:12px;word-break:break-all;color:var(--txt-2);margin-bottom:10px;line-height:1.5}
+.link-actions{display:flex;gap:8px}
+
+/* RESULTS CODE */
+.code-box{background:var(--bg);border:2px solid var(--accent);border-radius:8px;padding:14px 16px;font-family:monospace;font-size:13px;word-break:break-all;color:var(--accent);letter-spacing:.3px;margin:12px 0;user-select:all;line-height:1.6}
+.result-code-input{font-family:monospace;font-size:12px;min-height:80px}
+
+/* CANDIDATE VIEW */
+#candidate-view{display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:0}
+.cand-header{width:100%;background:var(--sid-bg);padding:16px 32px;display:flex;align-items:center;gap:12px}
+.cand-logo-name{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:18px;color:#fff}
+.cand-logo-name span{color:#C4B5FD}
+.cand-progress-bar{flex:1;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;margin-left:24px}
+.cand-progress-fill{height:100%;background:#C4B5FD;border-radius:2px;transition:width .5s ease}
+.cand-step-label{font-size:12px;color:#C4B5FD;font-weight:500;white-space:nowrap}
+.cand-body{width:100%;max-width:640px;margin:0 auto;padding:40px 24px 60px}
+.question-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:16px}
+.q-module-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px}
+.q-counter{font-size:12px;color:var(--txt-2);margin-bottom:12px}
+.q-text{font-size:17px;font-weight:600;font-family:'Bricolage Grotesque',sans-serif;margin-bottom:22px;line-height:1.5}
+.q-options{display:flex;flex-direction:column;gap:10px}
+.q-opt{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;transition:all .15s;text-align:left;width:100%;font-size:14px;color:var(--txt);line-height:1.5}
+.q-opt:hover{border-color:var(--accent);background:var(--accent-lt)}
+.q-opt.selected{border-color:var(--accent);background:var(--accent-lt)}
+.q-opt-letter{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--border);display:grid;place-items:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:1px;transition:all .15s}
+.q-opt.selected .q-opt-letter{background:var(--accent);border-color:var(--accent);color:#fff}
+.module-intro{text-align:center;padding:40px 20px}
+.module-intro-icon{width:72px;height:72px;border-radius:20px;display:grid;place-items:center;font-size:32px;margin:0 auto 20px}
+.module-intro h2{font-size:24px;font-weight:700;margin-bottom:10px}
+.module-intro p{color:var(--txt-2);margin-bottom:28px;font-size:15px}
+.module-meta{display:flex;justify-content:center;gap:24px;margin-bottom:28px}
+.module-meta-item{text-align:center}
+.module-meta-num{font-size:24px;font-weight:700;color:var(--accent)}
+.module-meta-lbl{font-size:12px;color:var(--txt-2)}
+.welcome-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:36px;text-align:center}
+.welcome-icon{font-size:48px;margin-bottom:16px}
+.welcome-card h2{font-size:22px;margin-bottom:8px}
+.welcome-card p{color:var(--txt-2);margin-bottom:24px}
+.welcome-fields{display:grid;gap:14px;margin-bottom:24px;text-align:left}
+.welcome-modules{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0 28px;text-align:left}
+.wm-item{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--card);border-radius:8px;font-size:13px;font-weight:500}
+.done-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:48px 36px;text-align:center}
+.done-icon{font-size:56px;margin-bottom:20px}
+
+/* NOTIFICATION */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--sid-bg);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+
+@media(max-width:720px){
+  #sidebar{display:none}
+  #main-content{padding:24px 20px}
+  .scores-grid{grid-template-columns:1fr}
+  .two-col{grid-template-columns:1fr}
+  .form-row-2{grid-template-columns:1fr}
+  .disc-grid{grid-template-columns:1fr}
+  .report-header{flex-direction:column}
+  .compat-bar-wrap{display:none}
+}
+</style>
+
+<!-- ══════════════════════════════════════════════════════════
+     RECRUITER VIEW
+══════════════════════════════════════════════════════════════ -->
+<div id="recruiter-view">
+  <aside id="sidebar">
+    <div class="sid-logo">
+      <div class="sid-logo-icon">🎯</div>
+      <div class="sid-logo-name">Talent<span>Scan</span></div>
+    </div>
+    <div class="sid-section-label">Proceso de Selección</div>
+    <nav class="sid-nav">
+      <button class="sid-item active" id="nav-setup" onclick="goScreen('setup')">
+        <span class="sid-step-num">1</span> Configurar Cargo
+      </button>
+      <button class="sid-item locked" id="nav-ranking" onclick="goScreen('ranking')">
+        <span class="sid-step-num">2</span> Ranking de CVs
+      </button>
+      <button class="sid-item locked" id="nav-links" onclick="goScreen('links')">
+        <span class="sid-step-num">3</span> Links de Evaluación
+      </button>
+      <button class="sid-item locked" id="nav-reports" onclick="goScreen('reports')">
+        <span class="sid-step-num">4</span> Ver Informes
+      </button>
+    </nav>
+    <div class="sid-footer">
+      <button class="theme-toggle" onclick="toggleTheme()">
+        <span id="theme-icon">🌙</span> Cambiar tema
+      </button>
+    </div>
+  </aside>
+
+  <main id="main-content">
+
+    <!-- ── SCREEN 1: CONFIGURAR CARGO ─────────────────── -->
+    <div class="screen active" id="screen-setup">
+      <div class="page-eyebrow">Paso 1 de 4</div>
+      <h1 class="page-title">Configurar el Cargo</h1>
+      <p class="page-sub">Define el perfil del cargo que necesitas cubrir. Esta información se usará para analizar y comparar los CVs.</p>
+
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">📋</span> Información del Cargo</div>
+        <div class="form-row-2">
+          <div class="form-row" style="margin-bottom:0">
+            <label>Título del Cargo *</label>
+            <input type="text" id="job-title" placeholder="Ej: Analista de Marketing Digital">
+          </div>
+          <div class="form-row" style="margin-bottom:0">
+            <label>Área / Departamento *</label>
+            <select id="job-dept">
+              <option value="">Selecciona el área…</option>
+              <option value="marketing">Marketing</option>
+              <option value="ventas">Ventas</option>
+              <option value="tecnologia">Tecnología</option>
+              <option value="finanzas">Finanzas</option>
+              <option value="rrhh">Recursos Humanos</option>
+              <option value="operaciones">Operaciones / General</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">🎓</span> Requisitos del Perfil</div>
+        <div class="form-row-2">
+          <div>
+            <label>Experiencia mínima (años)</label>
+            <input type="number" id="job-exp" value="2" min="0" max="20">
+          </div>
+          <div>
+            <label>Nivel educativo mínimo</label>
+            <select id="job-edu">
+              <option value="Sin requisito">Sin requisito específico</option>
+              <option value="Técnico">Técnico / Tecnólogo</option>
+              <option value="Bachiller/Pregrado">Bachiller / Pregrado en curso</option>
+              <option value="Pregrado completo" selected>Pregrado completo</option>
+              <option value="Posgrado/Especialización">Posgrado / Especialización</option>
+              <option value="Maestría o superior">Maestría o superior</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Habilidades y conocimientos requeridos</label>
+          <div class="tags-wrap" id="skills-wrap" onclick="document.getElementById('skill-input').focus()">
+            <input class="tag-input" id="skill-input" placeholder="Escribe y presiona Enter…" onkeydown="handleSkillKey(event)">
+          </div>
+          <p class="hint">Escribe una habilidad y presiona Enter o coma para agregarla.</p>
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label>Descripción del cargo (opcional)</label>
+          <textarea id="job-desc" placeholder="Responsabilidades, contexto del equipo, objetivos del cargo…" style="min-height:80px"></textarea>
+        </div>
+      </div>
+
+      <div class="flex-end">
+        <button class="btn btn-primary btn-lg" onclick="saveJob()">Continuar → Ranking de CVs</button>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 2: RANKING DE CVs ───────────────────── -->
+    <div class="screen" id="screen-ranking">
+      <div class="page-eyebrow">Paso 2 de 4</div>
+      <h1 class="page-title">Ranking de Candidatos</h1>
+      <p class="page-sub">Carga los CVs de los candidatos. El sistema los analiza y ordena por compatibilidad con el cargo <span id="ranking-job-title" style="color:var(--accent);font-weight:600"></span>.</p>
+
+      <!-- Add candidate form -->
+      <div class="card" id="add-cand-card">
+        <div class="card-title"><span class="card-title-icon">➕</span> Agregar Candidato</div>
+        <div class="form-row">
+          <label>Nombre del candidato *</label>
+          <input type="text" id="new-cand-name" placeholder="Nombre completo del candidato">
+        </div>
+        <div id="new-upload-area-wrap">
+          <div class="upload-area" id="new-upload-area"
+               ondragover="handleNewDragOver(event)" ondragleave="handleNewDragLeave(event)" ondrop="handleNewDrop(event)"
+               onclick="document.getElementById('new-cv-file').click()">
+            <div class="upload-area-icon">📄</div>
+            <p><span class="upload-link">Haz clic para subir</span> o arrastra el archivo aquí</p>
+            <p style="font-size:12px">PDF o Word (.docx) · Máx. 10 MB</p>
+          </div>
+          <div class="upload-status" id="new-upload-status" style="display:none">
+            <span>📎</span>
+            <span id="new-upload-status-text"></span>
+            <button class="upload-status-x" onclick="clearNewFile()">×</button>
+          </div>
+          <input type="file" id="new-cv-file" accept=".pdf,.docx,.doc" style="display:none" onchange="handleNewFileUpload(event)">
+        </div>
+        <div class="or-divider">o pega el texto</div>
+        <div class="form-row">
+          <textarea class="cv-area" id="new-cv-text" placeholder="Pega aquí el contenido del CV…"></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end">
+          <button class="btn btn-primary" onclick="addCandidateToRanking()">➕ Agregar al Ranking</button>
+        </div>
+      </div>
+
+      <!-- Ranking list -->
+      <div id="ranking-list-wrap" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h3 style="font-size:16px;font-weight:700" id="ranking-count">0 candidatos analizados</h3>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('add-cand-card').scrollIntoView({behavior:'smooth'})">+ Agregar otro</button>
+            <button class="btn btn-primary" onclick="goToLinks()">Continuar con seleccionados →</button>
+          </div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <table class="rank-table" id="rank-table">
+            <thead>
+              <tr>
+                <th style="width:48px">#</th>
+                <th>Candidato</th>
+                <th>Compatibilidad</th>
+                <th>Calidad CV</th>
+                <th>Skills</th>
+                <th>Estado</th>
+                <th style="width:60px;text-align:center">Avanzar</th>
+              </tr>
+            </thead>
+            <tbody id="rank-tbody"></tbody>
+          </table>
+        </div>
+        <p class="hint" style="margin-top:8px">✓ Marca los candidatos que avanzarán a la evaluación y haz clic en "Continuar".</p>
+      </div>
+
+      <div class="empty-state" id="ranking-empty">
+        <div class="empty-state-icon">📂</div>
+        <p style="font-weight:600;margin-bottom:6px">Aún no hay candidatos</p>
+        <p style="font-size:13px">Agrega el primer candidato con el formulario de arriba.</p>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 3: LINKS DE EVALUACIÓN ─────────────── -->
+    <div class="screen" id="screen-links">
+      <div class="page-eyebrow">Paso 3 de 4</div>
+      <h1 class="page-title">Links de Evaluación</h1>
+      <p class="page-sub">Envía el link a cada candidato seleccionado. Al abrirlo realizarán su evaluación y al terminar te enviarán un <strong>link de resultados</strong> — solo ábrelo y verás su informe completo.</p>
+
+      <!-- URL pública configuración -->
+      <div class="card" style="margin-bottom:20px" id="base-url-card">
+        <div class="card-title"><span class="card-title-icon">🌐</span> URL pública de la aplicación</div>
+        <p style="font-size:13px;color:var(--txt-2);margin-bottom:12px">
+          Para que los candidatos puedan abrir el test desde <strong>cualquier navegador o dispositivo</strong>,
+          la aplicación debe estar en una URL pública (no <code>file://</code>).<br>
+          <strong>Opción fácil:</strong> ve a <a href="https://app.netlify.com/drop" target="_blank" rel="noopener">netlify.com/drop</a>,
+          arrastra el archivo <code>talentscan.html</code> y copia la URL que te den.
+        </p>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="base-url-input" placeholder="https://mi-empresa.netlify.app/talentscan.html" style="flex:1">
+          <button class="btn btn-primary btn-sm" onclick="applyBaseUrl()">Aplicar</button>
+        </div>
+        <div id="base-url-status" style="font-size:12px;margin-top:7px;color:var(--txt-2)"></div>
+      </div>
+
+      <div id="links-list"></div>
+
+      <hr class="divider">
+
+      <div class="card" style="background:var(--accent-lt);border-color:var(--border)">
+        <div class="card-title"><span class="card-title-icon">ℹ️</span> ¿Cómo ver los resultados?</div>
+        <p style="font-size:14px;color:var(--txt-2);line-height:1.7">
+          Cuando el candidato finalice su evaluación, recibirá un <strong>link de resultados</strong> que deberá enviarte
+          (por WhatsApp, correo, etc.).<br><br>
+          Al hacer clic en ese link, TalentScan cargará automáticamente su informe completo en el <strong>Paso 4 — Ver Informes</strong>.
+          No necesitas pegar ningún código.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 4: VER INFORMES ────────────────────── -->
+    <div class="screen" id="screen-reports">
+      <div class="page-eyebrow">Paso 4 de 4</div>
+      <h1 class="page-title">Informes de Candidatos</h1>
+      <p class="page-sub">Resultados completos de los candidatos evaluados. Los informes se cargan automáticamente al abrir el link que te envía el candidato.</p>
+
+      <div id="reports-list"></div>
+
+      <div style="margin-top:16px">
+        <button class="btn btn-secondary" onclick="goScreen('links')">← Volver a Links de Evaluación</button>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /recruiter-view -->
+
+<!-- ══════════════════════════════════════════════════════════
+     CANDIDATE VIEW
+══════════════════════════════════════════════════════════════ -->
+<div id="candidate-view">
+  <div class="cand-header">
+    <div class="cand-logo-name">Talent<span>Scan</span></div>
+    <div class="cand-progress-bar"><div class="cand-progress-fill" id="cand-prog-fill" style="width:0%"></div></div>
+    <div class="cand-step-label" id="cand-step-lbl">Bienvenida</div>
+  </div>
+  <div class="cand-body">
+    <div id="cand-screen"></div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════ */
+const S = {
+  job: { title:'', dept:'', exp:0, edu:'', skills:[], desc:'' },
+  candidates: [],   // { name, quality, compat, found, missing, sections, wordCount, detYrs, detEdu, selected }
+  reports: [],      // decoded result objects
+  cand: {
+    name:'', email:'', jobData:null,
+    module:-1, qIdx:0, introShown:false,
+    answers:{ disc:[], general:[], tech:[], sit:[] },
+    scores:{ disc:{D:0,I:0,S:0,C:0}, general:0, tech:0, sit:0, comps:{} }
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════
+   QUESTION DATA
+═══════════════════════════════════════════════════════════ */
+const DISC_Q = [
+  { q:"Cuando enfrentas un problema difícil en el trabajo, tu primera reacción es:", opts:[
+    {t:"Actuar de inmediato y tomar el control de la situación", d:'D'},
+    {t:"Buscar a alguien con quien hablar y generar ideas juntos", d:'I'},
+    {t:"Pensar con calma antes de actuar y buscar la estabilidad", d:'S'},
+    {t:"Analizar todos los datos disponibles antes de decidir", d:'C'}]},
+  { q:"En un equipo de trabajo, tú generalmente:", opts:[
+    {t:"Asumes el liderazgo y marcas el ritmo", d:'D'},
+    {t:"Motivas al grupo y mantienes la energía alta", d:'I'},
+    {t:"Apoyas a todos y buscas que haya armonía", d:'S'},
+    {t:"Te aseguras de que todo se haga correctamente", d:'C'}]},
+  { q:"Cuando tienes un plazo ajustado:", opts:[
+    {t:"Trabajas más rápido y bajo presión das lo mejor de ti", d:'D'},
+    {t:"Ves el lado positivo y convences a otros de que pueden lograrlo", d:'I'},
+    {t:"Sigues tu rutina con constancia y terminas lo que empezaste", d:'S'},
+    {t:"Reorganizas tu plan para garantizar calidad dentro del tiempo disponible", d:'C'}]},
+  { q:"¿Cómo prefieres tomar decisiones importantes?", opts:[
+    {t:"Rápido y con confianza — los resultados lo validan", d:'D'},
+    {t:"Consultando con el equipo — el consenso es importante", d:'I'},
+    {t:"Despacio y con seguridad — prefiero estar seguro antes de actuar", d:'S'},
+    {t:"Con información completa — necesito datos sólidos", d:'C'}]},
+  { q:"Cuando alguien critica tu trabajo:", opts:[
+    {t:"Lo tomas como un reto y buscas superarlo", d:'D'},
+    {t:"Escuchas, pero te importa mucho la opinión de los demás", d:'I'},
+    {t:"Lo recibes con calma y reflexionas sobre si tiene razón", d:'S'},
+    {t:"Evalúas si la crítica tiene fundamento antes de actuar", d:'C'}]},
+  { q:"En tu día a día laboral, lo que más te impulsa es:", opts:[
+    {t:"Alcanzar metas y superar desafíos", d:'D'},
+    {t:"Conectar con las personas y disfrutar del proceso", d:'I'},
+    {t:"Sentir estabilidad y contribuir de forma constante", d:'S'},
+    {t:"Hacer bien las cosas y mejorar continuamente", d:'C'}]},
+  { q:"Cuando debes comunicar malas noticias:", opts:[
+    {t:"Las dices de forma directa y sin rodeos", d:'D'},
+    {t:"Buscas el momento adecuado y lo haces con empatía", d:'I'},
+    {t:"Eres muy cuidadoso/a con las palabras para no herir a nadie", d:'S'},
+    {t:"Presentas los hechos de forma clara con contexto y datos", d:'C'}]},
+  { q:"Cuando trabajas en un proyecto nuevo:", opts:[
+    {t:"Estableces metas ambiciosas y buscas resultados visibles", d:'D'},
+    {t:"Te entusiasmas fácilmente y generas ideas creativas", d:'I'},
+    {t:"Te aseguras de entender bien el proceso antes de comenzar", d:'S'},
+    {t:"Defines los estándares de calidad desde el inicio", d:'C'}]},
+  { q:"Frente a los cambios en el trabajo:", opts:[
+    {t:"Los ves como oportunidades y te adaptas rápidamente", d:'D'},
+    {t:"Los celebras — la variedad te da energía", d:'I'},
+    {t:"Necesitas tiempo para adaptarte, pero lo haces con compromiso", d:'S'},
+    {t:"Evalúas cuidadosamente cómo los cambios afectan los procesos", d:'C'}]},
+  { q:"Tu mayor fortaleza en el trabajo es:", opts:[
+    {t:"Tu capacidad de lograr resultados incluso en situaciones difíciles", d:'D'},
+    {t:"Tu habilidad para inspirar y conectar con las personas", d:'I'},
+    {t:"Tu confiabilidad y consistencia a lo largo del tiempo", d:'S'},
+    {t:"Tu atención al detalle y pensamiento analítico", d:'C'}]},
+  { q:"Lo que más valoras de un trabajo es:", opts:[
+    {t:"Autonomía, autoridad y la posibilidad de crecer rápido", d:'D'},
+    {t:"Un ambiente dinámico, colaborativo y lleno de energía", d:'I'},
+    {t:"Estabilidad, buen ambiente y relaciones de largo plazo", d:'S'},
+    {t:"Orden, calidad y un trabajo que reconozca tu expertise", d:'C'}]},
+  { q:"Cuando describes tu estilo de trabajo, la frase que más te identifica es:", opts:[
+    {t:"Orientado a resultados, directo y competitivo", d:'D'},
+    {t:"Creativo, optimista y excelente para relacionarme", d:'I'},
+    {t:"Paciente, leal y siempre dispuesto a ayudar", d:'S'},
+    {t:"Meticuloso, analítico y comprometido con la calidad", d:'C'}]}
+];
+
+const GENERAL_Q = [
+  { q:"Si todos los gerentes son profesionales, y algunos profesionales son contadores, ¿cuál es verdadera?",
+    opts:["Todos los gerentes son contadores","Algunos gerentes pueden ser contadores","Ningún gerente es contador","Todos los contadores son gerentes"], a:1 },
+  { q:"¿Cuál es el siguiente número en la serie: 2, 6, 12, 20, 30, ___?",
+    opts:["40","42","44","48"], a:1 },
+  { q:"Un proyecto toma 8 personas 6 días. ¿Cuántos días necesitan 4 personas para completarlo?",
+    opts:["10 días","12 días","14 días","16 días"], a:1 },
+  { q:"¿Cuál palabra es antónimo de EFÍMERO?",
+    opts:["Fugaz","Perpetuo","Breve","Momentáneo"], a:1 },
+  { q:"Si LIBRO es a BIBLIOTECA, entonces CUADRO es a:",
+    opts:["Arte","Marco","Museo","Pintor"], a:2 },
+  { q:"Un artículo cuesta $80 después de un descuento del 20%. ¿Cuál era su precio original?",
+    opts:["$96","$100","$104","$108"], a:1 },
+  { q:"¿Cuál número falta? 3, 9, 27, ___, 243",
+    opts:["54","72","81","108"], a:2 },
+  { q:"Si en un grupo de 30 personas, el 40% son mujeres, ¿cuántos hombres hay?",
+    opts:["12","16","18","20"], a:2 },
+  { q:"PLANETA : SOL  como  LUNA : ___",
+    opts:["Estrella","Planeta","Satélite","Galaxia"], a:1 },
+  { q:"Una empresa creció un 20% el primer año y un 25% el segundo. Si empezó con $100.000, ¿cuánto tiene al final del segundo año?",
+    opts:["$145.000","$148.000","$150.000","$152.000"], a:2 }
+];
+
+const TECH_Q = {
+  marketing:[
+    { q:"¿Qué significa CPM en publicidad digital?", opts:["Costo Por Mil impresiones","Costo Por Mensaje","Conversiones Por Mes","Costo Por Marketing"], a:0 },
+    { q:"En un embudo de marketing, ¿cuál es la etapa inicial?", opts:["Consideración","Decisión","Conciencia (Awareness)","Fidelización"], a:2 },
+    { q:"¿Qué es el NPS (Net Promoter Score)?", opts:["Métrica de rentabilidad","Indicador de lealtad del cliente","Sistema de gestión de leads","Herramienta de automatización"], a:1 },
+    { q:"¿Cuál es la diferencia principal entre SEO y SEM?", opts:["SEO es de pago, SEM es orgánico","SEO es orgánico, SEM es de pago","Son lo mismo","SEO es para redes sociales"], a:1 },
+    { q:"¿Qué es un 'Buyer Persona'?", opts:["El comprador real","Una representación ficticia del cliente ideal","El responsable de compras","Una técnica de segmentación por edad"], a:1 },
+    { q:"¿Qué mide el ROI en marketing?", opts:["El alcance de una campaña","El retorno sobre la inversión","El número de seguidores","El costo por click"], a:1 },
+    { q:"¿Qué es el marketing de contenidos?", opts:["Publicidad pagada","Creación de contenido valioso para atraer audiencia","Envío masivo de correos","Gestión de redes sociales pagadas"], a:1 },
+    { q:"¿Cuál de estos es un KPI típico de email marketing?", opts:["Impresiones","Tasa de apertura","Reach","CPM"], a:1 },
+    { q:"¿Qué es un CRM en el contexto de marketing?", opts:["Sistema de gestión de relaciones con clientes","Herramienta de diseño gráfico","Plataforma de publicidad programática","Red de distribución de contenido"], a:0 },
+    { q:"¿Qué es el A/B Testing?", opts:["Técnica para comparar dos versiones de algo","Método para calcular el presupuesto","Sistema de automatización de redes","Estrategia de posicionamiento SEO"], a:0 }
+  ],
+  finanzas:[
+    { q:"¿Qué mide el EBITDA?", opts:["Ganancias antes de intereses, impuestos, depreciación y amortización","El nivel de endeudamiento","La liquidez a corto plazo","El valor de mercado de las acciones"], a:0 },
+    { q:"¿Qué es el capital de trabajo?", opts:["El total de activos fijos","La diferencia entre activos y pasivos corrientes","El patrimonio de los accionistas","El presupuesto anual de operaciones"], a:1 },
+    { q:"¿Qué indica una razón corriente mayor a 1?", opts:["La empresa tiene más deudas que activos","La empresa puede cubrir sus pasivos corrientes","La empresa tiene pérdidas operativas","La empresa necesita financiamiento externo"], a:1 },
+    { q:"¿Qué es el VPN (Valor Presente Neto)?", opts:["El valor actual de los activos fijos","La diferencia entre el valor actual de ingresos y egresos futuros","El precio de mercado de la empresa","El total de ingresos del período"], a:1 },
+    { q:"¿En qué documento financiero se registran los ingresos y gastos de un período?", opts:["Balance general","Estado de resultados","Flujo de caja","Estado de cambios en el patrimonio"], a:1 },
+    { q:"¿Qué es la depreciación?", opts:["Un aumento en el valor de un activo","La distribución del costo de un activo durante su vida útil","Un gasto de operación variable","Una deuda a largo plazo"], a:1 },
+    { q:"¿Qué representa el punto de equilibrio?", opts:["El nivel de ventas donde los ingresos igualan los costos totales","El máximo nivel de producción posible","La tasa de retorno mínima aceptable","El margen de utilidad bruta"], a:0 },
+    { q:"¿Qué es el flujo de caja libre?", opts:["El efectivo disponible en caja","El efectivo generado después de gastos operativos e inversiones","El total de ingresos del mes","La suma de todos los préstamos bancarios"], a:1 },
+    { q:"¿Qué mide la TIR (Tasa Interna de Retorno)?", opts:["La inflación del período","La tasa de descuento que hace el VPN igual a cero","El costo de financiamiento externo","El rendimiento de los bonos del Estado"], a:1 },
+    { q:"¿En qué estado financiero se muestran los activos, pasivos y patrimonio?", opts:["Estado de resultados","Flujo de caja","Balance general","Estado de utilidades retenidas"], a:2 }
+  ],
+  tecnologia:[
+    { q:"¿Qué es una API REST?", opts:["Un tipo de base de datos relacional","Una interfaz para comunicación entre sistemas vía HTTP","Un lenguaje de programación de back-end","Un protocolo de seguridad para redes"], a:1 },
+    { q:"En metodologías ágiles, ¿qué es un 'Sprint'?", opts:["Un error crítico en producción","Un ciclo de trabajo de tiempo fijo, generalmente 2 semanas","Un tipo de reunión de planificación anual","Una herramienta de control de versiones"], a:1 },
+    { q:"¿Qué hace el comando Git 'commit'?", opts:["Descarga los últimos cambios del repositorio remoto","Guarda los cambios staged en el historial local","Fusiona dos ramas de desarrollo","Elimina archivos del repositorio"], a:1 },
+    { q:"¿Qué es una base de datos relacional?", opts:["Una base de datos que almacena datos en documentos JSON","Una base de datos que organiza datos en tablas con relaciones","Una base de datos en memoria RAM","Una base de datos distribuida en la nube"], a:1 },
+    { q:"¿Qué significa el principio DRY en programación?", opts:["Don't Repeat Yourself — evitar duplicación de código","Develop, Review, Yield — ciclo de desarrollo","Data Repository for You — tipo de arquitectura","Dynamic Request Yielding — técnica de optimización"], a:0 },
+    { q:"¿Qué es el cloud computing?", opts:["Software que solo funciona sin conexión","Computación y almacenamiento de recursos vía internet bajo demanda","Un tipo de hardware de servidor físico","Un sistema operativo para servidores"], a:1 },
+    { q:"¿Qué hace un test unitario?", opts:["Prueba el sistema completo","Verifica el funcionamiento de una unidad pequeña de código en aislamiento","Simula el comportamiento del usuario final","Mide el rendimiento del servidor"], a:1 },
+    { q:"¿Qué es UX en diseño de software?", opts:["El código visual de la interfaz","La experiencia total del usuario al interactuar con el producto","La velocidad de carga de la aplicación","El sistema de autenticación de usuarios"], a:1 },
+    { q:"¿Qué es SQL?", opts:["Un lenguaje de programación orientado a objetos","Un lenguaje para consultar y manipular bases de datos relacionales","Un framework de JavaScript para front-end","Un protocolo de comunicación en red"], a:1 },
+    { q:"¿Qué es la autenticación de dos factores (2FA)?", opts:["Un tipo de cifrado de datos en reposo","Un sistema que requiere dos formas de verificación de identidad","Una técnica de backup doble","Un método para duplicar servidores"], a:1 }
+  ],
+  ventas:[
+    { q:"¿En qué consiste la técnica SPIN Selling?", opts:["Vender cuatro productos al mismo tiempo","Una metodología que usa preguntas de Situación, Problema, Implicación y Necesidad","Una técnica para negociar descuentos","Un sistema de comisiones por volumen"], a:1 },
+    { q:"¿Qué es el pipeline de ventas?", opts:["El canal de distribución de productos físicos","El seguimiento visual de oportunidades en cada etapa del proceso de venta","El presupuesto trimestral del equipo","El sistema de inventario del área comercial"], a:1 },
+    { q:"¿Qué es el up-selling?", opts:["Ofrecer un producto complementario","Ofrecer al cliente una versión más premium del producto que eligió","Hacer seguimiento post-venta","Recuperar un cliente que dejó de comprar"], a:1 },
+    { q:"¿Qué es el LTV (Lifetime Value)?", opts:["El valor total de los ingresos que un cliente genera durante su relación con la empresa","El costo de adquirir un nuevo cliente","El margen de ganancia por producto","El número de compras por mes"], a:0 },
+    { q:"¿Cuál es la mejor respuesta ante una objeción de precio del cliente?", opts:["Bajar el precio inmediatamente","Ignorar la objeción y seguir con el pitch","Comprender la objeción y reafirmar el valor del producto","Terminar la conversación y ofrecer descuento por email"], a:2 },
+    { q:"¿Qué significa la tasa de conversión en ventas?", opts:["El porcentaje de leads que se convierten en clientes","La cantidad de llamadas realizadas por día","El margen de ganancia por venta","El número de productos vendidos"], a:0 },
+    { q:"¿Qué es la prospección en ventas?", opts:["El cierre de una negociación","La búsqueda activa de posibles clientes","El proceso de cobro a clientes","La capacitación del equipo de ventas"], a:1 },
+    { q:"¿Qué es el cross-selling?", opts:["Vender a clientes de la competencia","Ofrecer productos complementarios al que el cliente ya compra o va a comprar","Vender en mercados internacionales","Reducir el precio para cerrar rápido"], a:1 },
+    { q:"Un buen vendedor frente a un cliente indeciso debe:", opts:["Presionar para que decida rápido","Hacer preguntas para entender su necesidad real y guiarlo","Ofrecer el mayor descuento posible","Pasar al siguiente prospecto"], a:1 },
+    { q:"¿Qué es un CRM en el área de ventas?", opts:["Un informe de comisiones mensual","Un sistema para gestionar relaciones e información de clientes","Una plataforma de publicidad digital","Un método de entrenamiento para vendedores"], a:1 }
+  ],
+  rrhh:[
+    { q:"¿En qué consiste la evaluación de desempeño 360°?", opts:["Solo el jefe evalúa al colaborador","El colaborador se evalúa a sí mismo únicamente","Evaluación desde múltiples fuentes: jefe, pares, subordinados y autoevaluación","El área de RRHH evalúa a todos al mismo tiempo"], a:2 },
+    { q:"¿Qué es el onboarding?", opts:["El proceso de desvinculación de un empleado","El proceso de integración y bienvenida de un nuevo colaborador","La evaluación anual de desempeño","El programa de beneficios de la empresa"], a:1 },
+    { q:"¿Qué mide el índice de rotación de personal?", opts:["La productividad del equipo","El porcentaje de empleados que dejan la empresa en un período","El nivel de satisfacción laboral","La cantidad de ausencias por mes"], a:1 },
+    { q:"¿Qué son las competencias laborales?", opts:["Los títulos académicos de un empleado","Conocimientos, habilidades y actitudes que permiten un desempeño exitoso","El historial de trabajo de un candidato","Las metas asignadas a cada cargo"], a:1 },
+    { q:"¿Qué es el clima organizacional?", opts:["La temperatura del ambiente físico de trabajo","La percepción colectiva de los empleados sobre el ambiente de trabajo","El diseño del espacio de oficinas","El reglamento interno de la empresa"], a:1 },
+    { q:"¿Cuál es la diferencia entre el perfil del cargo y la descripción del cargo?", opts:["Son exactamente lo mismo","El perfil define los requisitos del candidato; la descripción define las funciones del cargo","La descripción es para gerentes y el perfil para operativos","El perfil es obligatorio y la descripción es opcional"], a:1 },
+    { q:"¿Qué es el employer branding?", opts:["La marca de los productos de la empresa","La estrategia para posicionar a la empresa como empleador atractivo","El presupuesto del área de marketing","El nombre comercial de la empresa"], a:1 },
+    { q:"¿Qué mide el eNPS (Employee NPS)?", opts:["La rentabilidad de la empresa","La probabilidad de que un empleado recomiende la empresa como lugar de trabajo","El número de empleados satisfechos con su salario","La tasa de ausentismo mensual"], a:1 },
+    { q:"¿Qué es un plan de carrera?", opts:["El plan de gastos del área de RRHH","La ruta de desarrollo profesional que puede seguir un empleado dentro de la organización","El contrato de trabajo de un empleado","El presupuesto de capacitaciones anuales"], a:1 },
+    { q:"¿Qué es la entrevista por competencias?", opts:["Una entrevista enfocada en el salario del candidato","Una técnica que evalúa comportamientos pasados como predictor del desempeño futuro","Una prueba técnica de conocimientos específicos","Una entrevista grupal con varios candidatos"], a:1 }
+  ],
+  general:[
+    { q:"¿Qué es la gestión del tiempo?", opts:["Registrar las horas de trabajo","Organizar y planificar tareas para ser más productivo","Reducir las horas laborales","Automatizar procesos administrativos"], a:1 },
+    { q:"¿Qué es el pensamiento crítico?", opts:["Criticar el trabajo de los demás","Capacidad de analizar información objetivamente para tomar mejores decisiones","Identificar problemas en los procesos","Dar retroalimentación negativa de forma directa"], a:1 },
+    { q:"¿Cuál de estos es un ejemplo de comunicación asertiva?", opts:["Evitar decir lo que piensas para no generar conflictos","Expresar tus opiniones con claridad y respeto, sin agredir ni ceder","Imponer tu punto de vista sin escuchar al otro","Estar de acuerdo con todo para mantener la paz"], a:1 },
+    { q:"¿Qué es la inteligencia emocional?", opts:["La capacidad de memorizar información rápidamente","La habilidad de reconocer, entender y gestionar las emociones propias y ajenas","Un test de cociente intelectual","La capacidad de resolver problemas matemáticos complejos"], a:1 },
+    { q:"¿Qué significa OKR en gestión organizacional?", opts:["Objetivo y Resultado Clave (Objectives and Key Results)","Organización, Conocimiento y Recursos","Orden, Calidad y Rendimiento","Objetivos, Conocimientos y Responsabilidades"], a:0 },
+    { q:"¿Cuál es la mejor estrategia para manejar una situación de alto estrés en el trabajo?", opts:["Ignorar el problema y esperar que se resuelva solo","Priorizar tareas, pedir apoyo si es necesario y mantener la calma","Trabajar más horas sin descanso hasta terminar todo","Delegar todas las tareas y no ocuparse de nada"], a:1 },
+    { q:"¿Qué es la metodología Kanban?", opts:["Un sistema de pago de nómina","Un método visual para gestionar flujos de trabajo con tarjetas y columnas","Un tipo de evaluación de desempeño","Una técnica de análisis financiero"], a:1 },
+    { q:"En un equipo de trabajo, ¿qué rol cumple el facilitador?", opts:["Toma todas las decisiones importantes","Guía los procesos del equipo sin imponer su opinión","Realiza el trabajo más técnico del grupo","Evalúa el desempeño de cada miembro"], a:1 },
+    { q:"¿Qué es la gestión por procesos?", opts:["Evaluar el desempeño individualmente","Enfoque que identifica, diseña y mejora los procesos de la organización para lograr resultados","Un método para controlar el presupuesto","Un sistema de control de calidad de productos"], a:1 },
+    { q:"¿Cuál de estos elementos es clave en la negociación efectiva?", opts:["Imponer tu posición desde el inicio","Buscar el beneficio mutuo y entender los intereses de la otra parte","Ceder en todo para evitar conflictos","Evitar reuniones cara a cara"], a:1 }
+  ]
+};
+TECH_Q.operaciones = TECH_Q.general;
+
+const SIT_Q = [
+  { q:"Tu equipo no va a cumplir un plazo importante. ¿Cuál es tu primera acción?", focus:'liderazgo', opts:[
+    {t:"Informar al cliente inmediatamente y proponer una nueva fecha realista", s:{comunicacion:3,liderazgo:2}},
+    {t:"Redistribuir las tareas del equipo para maximizar el rendimiento restante", s:{liderazgo:3,trabajo_equipo:2}},
+    {t:"Quedarte horas extras para completar el trabajo tú mismo", s:{resolucion:2}},
+    {t:"Analizar primero por qué se retrasó antes de tomar cualquier acción", s:{resolucion:3}}]},
+  { q:"Un compañero comete un error que afecta tu trabajo. ¿Qué haces?", focus:'comunicacion', opts:[
+    {t:"Hablas con él/ella de forma directa y empática para encontrar una solución juntos", s:{comunicacion:3,trabajo_equipo:2}},
+    {t:"Escales el problema con tu jefe inmediatamente", s:{liderazgo:1}},
+    {t:"Absorbes el impacto del error y lo resuelves sin comentarlo", s:{adaptabilidad:2}},
+    {t:"Documentas el error y lo mencionas en la próxima reunión de equipo", s:{comunicacion:2,resolucion:2}}]},
+  { q:"Te asignan un proyecto con objetivos poco claros y poco tiempo. ¿Cómo procedes?", focus:'resolucion', opts:[
+    {t:"Solicitas una reunión urgente para clarificar los objetivos antes de comenzar", s:{comunicacion:3,liderazgo:2}},
+    {t:"Haces supuestos razonables y comienzas a trabajar, documentando tus decisiones", s:{adaptabilidad:3,resolucion:2}},
+    {t:"Esperas instrucciones más claras antes de avanzar", s:{}},
+    {t:"Delegas la mayor parte del trabajo al equipo para ahorrar tiempo", s:{liderazgo:1,trabajo_equipo:1}}]},
+  { q:"En una reunión, un colega propone una idea que crees que no funcionará. ¿Qué haces?", focus:'comunicacion', opts:[
+    {t:"Escuchas atentamente, luego compartes tus dudas con argumentos específicos y respetuosos", s:{comunicacion:3,trabajo_equipo:2}},
+    {t:"Guardas silencio para no generar tensiones innecesarias", s:{}},
+    {t:"Interrumpes para explicar por qué la idea no es viable", s:{comunicacion:1}},
+    {t:"Después de la reunión, hablas en privado con el colega para compartir tus preocupaciones", s:{comunicacion:2,trabajo_equipo:3}}]},
+  { q:"Tu empresa implementa un cambio de proceso que complica tu forma habitual de trabajar. ¿Cuál es tu reacción?", focus:'adaptabilidad', opts:[
+    {t:"Te adaptas rápidamente y buscas formas de aprovechar el nuevo proceso", s:{adaptabilidad:3,resolucion:2}},
+    {t:"Compartes tus preocupaciones con tu jefe y propones mejoras al proceso", s:{comunicacion:3,liderazgo:2}},
+    {t:"Sigues el proceso nuevo aunque no estés de acuerdo, sin cuestionarlo", s:{adaptabilidad:1}},
+    {t:"Buscas el apoyo de compañeros para adaptarte juntos al cambio", s:{trabajo_equipo:3,adaptabilidad:2}}]},
+  { q:"Tienes varias tareas urgentes al mismo tiempo y no puedes hacerlas todas. ¿Qué haces?", focus:'resolucion', opts:[
+    {t:"Priorizas según impacto y urgencia, comunicas los plazos que no podrás cumplir", s:{resolucion:3,comunicacion:3}},
+    {t:"Pides apoyo al equipo para que te ayuden con las tareas menos estratégicas", s:{trabajo_equipo:3,liderazgo:2}},
+    {t:"Trabajas hasta terminar todo aunque te tome más tiempo del esperado", s:{adaptabilidad:1}},
+    {t:"Le preguntas a tu jefe cuáles tareas son más importantes y te enfocas en esas", s:{comunicacion:2,resolucion:2}}]}
+];
+
+/* ═══════════════════════════════════════════════════════════
+   PDF.JS WORKER
+═══════════════════════════════════════════════════════════ */
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INIT — detect candidate eval link
+═══════════════════════════════════════════════════════════ */
+let S_lastRoutedHash = null;
+function handleHashRoute() {
+  const hash = window.location.hash;
+  if (hash === S_lastRoutedHash) return;
+  S_lastRoutedHash = hash;
+  if (hash.startsWith('#eval=')) {
+    try {
+      const raw = JSON.parse(decodeURIComponent(atob(hash.slice(6))));
+      // Support both compact format (j/n/c/q) and legacy format (job/name/cv)
+      const payload = raw.j ? {
+        job: { title: raw.j.t||'', dept: raw.j.d||'', exp: raw.j.e||0, edu: raw.j.u||'', skills: raw.j.s||[] },
+        name: raw.n || '',
+        cv: { compat: raw.c||0, quality: raw.q||0, found: [], missing: [] }
+      } : raw;
+      S.cand.jobData = payload;
+      S.cand.name = payload.name || '';
+      enterCandidateMode();
+    } catch(e) {
+      console.error('Invalid eval link:', e);
+    }
+  } else if (hash.startsWith('#report=')) {
+    try {
+      const data = JSON.parse(decodeURIComponent(atob(hash.slice(8))));
+      if (data.v && data.name) {
+        S.reports.push(data);
+        ['ranking','links','reports'].forEach(s => {
+          const n = document.getElementById('nav-' + s);
+          if (n) n.classList.remove('locked');
+        });
+        goScreen('reports');
+        document.getElementById('nav-reports').classList.add('active');
+        renderReportsScreen();
+      }
+    } catch(e) {
+      console.error('Invalid report link:', e);
+    }
+  }
+}
+window.addEventListener('load', handleHashRoute);
+window.addEventListener('hashchange', handleHashRoute);
+
+/* ═══════════════════════════════════════════════════════════
+   THEME
+═══════════════════════════════════════════════════════════ */
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  if (!cur || cur === 'light') { document.documentElement.setAttribute('data-theme','dark'); document.getElementById('theme-icon').textContent='☀️'; }
+  else { document.documentElement.setAttribute('data-theme','light'); document.getElementById('theme-icon').textContent='🌙'; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RECRUITER NAVIGATION
+═══════════════════════════════════════════════════════════ */
+const SCREENS = ['setup','ranking','links','reports'];
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + id);
+  if (el) el.classList.add('active');
+  SCREENS.forEach(s => {
+    const nav = document.getElementById('nav-' + s);
+    if (nav) { nav.classList.remove('active'); }
+  });
+  const nav = document.getElementById('nav-' + id);
+  if (nav) nav.classList.add('active');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SKILL TAGS
+═══════════════════════════════════════════════════════════ */
+function handleSkillKey(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(/,$/, '');
+    if (val) addSkill(val);
+    e.target.value = '';
+  }
+}
+function addSkill(name) {
+  if (S.job.skills.includes(name)) return;
+  S.job.skills.push(name);
+  renderSkills();
+}
+function removeSkill(name) {
+  S.job.skills = S.job.skills.filter(s => s !== name);
+  renderSkills();
+}
+function renderSkills() {
+  const wrap = document.getElementById('skills-wrap');
+  const input = document.getElementById('skill-input');
+  wrap.innerHTML = '';
+  S.job.skills.forEach(s => {
+    const t = document.createElement('div');
+    t.className = 'tag';
+    t.innerHTML = `${s}<button class="tag-x" onclick="removeSkill('${s.replace(/'/g,"\\'")}')">×</button>`;
+    wrap.appendChild(t);
+  });
+  wrap.appendChild(input);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STEP 1 — SAVE JOB
+═══════════════════════════════════════════════════════════ */
+function saveJob() {
+  const title = document.getElementById('job-title').value.trim();
+  const dept  = document.getElementById('job-dept').value;
+  if (!title) { alert('Por favor ingresa el título del cargo.'); return; }
+  if (!dept)  { alert('Por favor selecciona el área o departamento.'); return; }
+  S.job.title = title;
+  S.job.dept  = dept;
+  S.job.exp   = parseInt(document.getElementById('job-exp').value) || 0;
+  S.job.edu   = document.getElementById('job-edu').value;
+  S.job.desc  = document.getElementById('job-desc').value.trim();
+
+  // Mark step 1 done, unlock step 2
+  document.getElementById('nav-setup').classList.remove('active');
+  document.getElementById('nav-setup').classList.add('done');
+  const navR = document.getElementById('nav-ranking');
+  navR.classList.remove('locked');
+  document.getElementById('ranking-job-title').textContent = '"' + title + '"';
+  goScreen('ranking');
+  navR.classList.add('active');
+  renderRankingScreen();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STEP 2 — CV ANALYSIS & RANKING
+═══════════════════════════════════════════════════════════ */
+function norm(t) {
+  return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+
+function analyzeCV(text) {
+  const n = norm(text);
+  const sec = {
+    contacto:   /email|correo|telefono|celular|linkedin|github|@/.test(n),
+    educacion:  /educacion|universidad|carrera|titulo|bachiller|licenciatura|maestria|ingeniero|tecnico|grado|pregrado/.test(n),
+    experiencia:/experiencia|trabajo|empresa|cargo|puesto|laboral|empleo|posicion/.test(n),
+    habilidades:/habilidades|competencias|conocimientos|skills|tecnolog/.test(n),
+    perfil:     /objetivo|perfil|resumen|acerca|sobre mi|presentacion/.test(n)
+  };
+  const wc = text.trim().split(/\s+/).length;
+  let quality = 0;
+  if (sec.contacto)    quality += 15;
+  if (sec.educacion)   quality += 20;
+  if (sec.experiencia) quality += 25;
+  if (sec.habilidades) quality += 20;
+  if (sec.perfil)      quality += 10;
+  if (wc >= 150 && wc <= 1200) quality += 10;
+
+  const found = [], missing = [];
+  S.job.skills.forEach(sk => {
+    (n.includes(norm(sk)) ? found : missing).push(sk);
+  });
+
+  const eduMap = {tecnico:1,tecnologo:1,bachiller:2,pregrado:3,licenciatura:3,ingeniero:3,administrador:3,profesional:3,posgrado:4,especializacion:4,maestria:4,master:4,mba:4,doctorado:5,phd:5};
+  let detEdu = 0;
+  Object.entries(eduMap).forEach(([k,v])=>{ if(n.includes(k)) detEdu = Math.max(detEdu,v); });
+  const reqEduMap = {'Sin requisito':0,'Técnico':1,'Bachiller/Pregrado':2,'Pregrado completo':3,'Posgrado/Especialización':4,'Maestría o superior':4};
+  const reqEdu = reqEduMap[S.job.edu] || 0;
+  const eduScore = detEdu >= reqEdu ? 20 : detEdu >= reqEdu-1 ? 12 : 5;
+
+  const yrMatches = n.match(/(\d+)\s*a[ño]/g) || [];
+  let detYrs = 0;
+  yrMatches.forEach(m => { const v=parseInt(m); if(v>detYrs&&v<40) detYrs=v; });
+  const expScore = detYrs >= S.job.exp ? 20 : detYrs >= S.job.exp-1 ? 12 : detYrs > 0 ? 8 : 5;
+
+  const skillPct = S.job.skills.length ? found.length/S.job.skills.length : 0.5;
+  const compat = Math.min(100, Math.round(skillPct*60 + eduScore + expScore));
+
+  return { quality, compat, found, missing, sections: sec, wordCount: wc, detYrs, detEdu };
+}
+
+function addCandidateToRanking() {
+  const name = document.getElementById('new-cand-name').value.trim();
+  const text = document.getElementById('new-cv-text').value.trim();
+  if (!name) { alert('Por favor ingresa el nombre del candidato.'); return; }
+  if (text.length < 50) { alert('Por favor sube o pega el CV del candidato (mínimo 50 caracteres).'); return; }
+
+  const analysis = analyzeCV(text);
+  S.candidates.push({ name, ...analysis, selected: false });
+  S.candidates.sort((a,b) => b.compat - a.compat);
+
+  // Reset form
+  document.getElementById('new-cand-name').value = '';
+  document.getElementById('new-cv-text').value = '';
+  document.getElementById('new-upload-status').style.display = 'none';
+  document.getElementById('new-cv-file').value = '';
+
+  renderRankingScreen();
+  showToast('✅ ' + name + ' agregado al ranking');
+}
+
+function renderRankingScreen() {
+  const isEmpty = S.candidates.length === 0;
+  document.getElementById('ranking-empty').style.display = isEmpty ? 'block' : 'none';
+  document.getElementById('ranking-list-wrap').style.display = isEmpty ? 'none' : 'block';
+  if (isEmpty) return;
+
+  document.getElementById('ranking-count').textContent = S.candidates.length + ' candidato' + (S.candidates.length !== 1 ? 's' : '') + ' analizados';
+
+  const tbody = document.getElementById('rank-tbody');
+  tbody.innerHTML = S.candidates.map((c, i) => {
+    const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+    const compatColor = c.compat >= 70 ? 'var(--success)' : c.compat >= 50 ? 'var(--warn)' : 'var(--danger)';
+    const badge = c.compat >= 80 ? '<span class="badge badge-success">Alta compat.</span>'
+                : c.compat >= 65 ? '<span class="badge badge-info">Compatible</span>'
+                : c.compat >= 50 ? '<span class="badge badge-warn">Revisar</span>'
+                : '<span class="badge badge-danger">Baja compat.</span>';
+    const skillsText = S.job.skills.length
+      ? `${c.found.length}/${S.job.skills.length} skills`
+      : '—';
+    return `<tr>
+      <td><span class="rank-num ${rankClass}">${i+1}</span></td>
+      <td class="cand-name-cell">${c.name}</td>
+      <td>
+        <div style="font-weight:700;color:${compatColor}">${c.compat}%</div>
+        <div class="compat-bar-wrap">
+          <div class="compat-bar"><div class="compat-bar-fill" style="width:${c.compat}%;background:${compatColor}"></div></div>
+        </div>
+      </td>
+      <td><span style="color:var(--txt-2)">${c.quality}%</span></td>
+      <td style="font-size:13px;color:var(--txt-2)">${skillsText}</td>
+      <td>${badge}</td>
+      <td style="text-align:center">
+        <input type="checkbox" class="cand-check" ${c.selected?'checked':''} onchange="toggleSelect(${i})" title="Seleccionar para evaluación">
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleSelect(i) {
+  S.candidates[i].selected = !S.candidates[i].selected;
+}
+
+function goToLinks() {
+  const selected = S.candidates.filter(c => c.selected);
+  if (selected.length === 0) {
+    alert('Selecciona al menos un candidato marcando la casilla en la columna "Avanzar".');
+    return;
+  }
+  document.getElementById('nav-ranking').classList.remove('active');
+  document.getElementById('nav-ranking').classList.add('done');
+  const navL = document.getElementById('nav-links');
+  navL.classList.remove('locked');
+  goScreen('links');
+  navL.classList.add('active');
+  renderLinksScreen();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STEP 3 — LINKS DE EVALUACIÓN
+═══════════════════════════════════════════════════════════ */
+// URL pública donde está desplegada la app
+const NETLIFY_URL = 'https://talentscann.netlify.app';
+let S_baseUrl = null;
+
+function getBaseUrl() {
+  if (S_baseUrl) return S_baseUrl;
+  const href = window.location.href.replace(/#.*/, '').replace(/\?.*/, '');
+  // Si está en https (Netlify u otro host), usar la URL actual
+  if (window.location.protocol !== 'file:') return href;
+  // Si es archivo local, usar la URL de Netlify configurada
+  return NETLIFY_URL;
+}
+
+function applyBaseUrl() {
+  const val = document.getElementById('base-url-input').value.trim().replace(/\/$/, '');
+  const st  = document.getElementById('base-url-status');
+  if (!val || (!val.startsWith('http://') && !val.startsWith('https://'))) {
+    st.style.color = 'var(--danger)';
+    st.textContent = '⚠️ Ingresa una URL válida que empiece con https://';
+    return;
+  }
+  S_baseUrl = val;
+  st.style.color = 'var(--success)';
+  st.textContent = '✅ URL guardada — los links de abajo ya son compartibles';
+  renderLinksScreen();
+}
+
+function generateEvalLink(cand) {
+  const base = getBaseUrl();
+  if (!base) return null;
+  // Minimal payload — short keys to keep URL corta
+  const payload = {
+    j: { t: S.job.title, d: S.job.dept, e: S.job.exp, u: S.job.edu, s: S.job.skills },
+    n: cand.name,
+    c: cand.compat,
+    q: cand.quality
+  };
+  try {
+    return base + '#eval=' + btoa(encodeURIComponent(JSON.stringify(payload)));
+  } catch(e) { return null; }
+}
+
+function renderLinksScreen() {
+  const selected = S.candidates.filter(c => c.selected);
+  const container = document.getElementById('links-list');
+  // Pre-fill and auto-apply base URL
+  const inputEl = document.getElementById('base-url-input');
+  const statusEl = document.getElementById('base-url-status');
+  if (inputEl) {
+    const base = getBaseUrl();
+    if (!inputEl.value && base) inputEl.value = base;
+    if (!S_baseUrl && base) {
+      S_baseUrl = base;
+      const isLocal = window.location.protocol === 'file:';
+      if (statusEl) {
+        statusEl.style.color = 'var(--success)';
+        statusEl.textContent = isLocal
+          ? '✅ Usando tu sitio Netlify — sube el archivo index.html allí para activar los links'
+          : '✅ URL detectada automáticamente';
+      }
+    }
+  }
+  container.innerHTML = selected.map((c, i) => {
+    const link = generateEvalLink(c);
+    const compatColor = c.compat >= 70 ? 'var(--success)' : c.compat >= 50 ? 'var(--warn)' : 'var(--danger)';
+    return `<div class="link-card">
+      <div class="link-card-header">
+        <div>
+          <div class="link-card-name">👤 ${c.name}</div>
+          <div style="font-size:13px;color:var(--txt-2);margin-top:3px">
+            Compatibilidad: <strong style="color:${compatColor}">${c.compat}%</strong> · CV: ${c.quality}%
+          </div>
+        </div>
+        <span class="badge ${c.compat>=80?'badge-success':c.compat>=65?'badge-info':c.compat>=50?'badge-warn':'badge-danger'}">
+          ${c.compat>=80?'Alta compat.':c.compat>=65?'Compatible':c.compat>=50?'Revisar':'Baja compat.'}
+        </span>
+      </div>
+      ${link
+        ? `<a class="link-url-box" id="link-url-${i}" href="${link}" target="_blank" rel="noopener noreferrer"
+              style="display:block;text-decoration:none;cursor:pointer" title="Clic para abrir el test del candidato">${link}</a>
+           <div class="link-actions">
+             <button class="btn btn-primary btn-sm" onclick="copyLinkById('link-url-${i}')">📋 Copiar link</button>
+             <a href="${link}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="text-decoration:none">👁️ Probar evaluación</a>
+           </div>`
+        : `<div style="background:rgba(215,119,6,.1);border-radius:7px;padding:12px;color:var(--warn);font-size:13px">
+             ⚠️ Ingresa la <strong>URL pública</strong> de la aplicación en el campo de arriba para generar el link de este candidato.
+           </div>`
+      }
+    </div>`;
+  }).join('');
+}
+
+function copyLinkById(id) {
+  const el = document.getElementById(id);
+  const text = el?.href || el?.textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => showToast('✅ Link copiado al portapapeles')).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.top = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('✅ Link copiado');
+  });
+}
+
+
+function submitResultsCode() {
+  // Legacy function — kept for compatibility. Results now arrive via #report= link.
+  const raw = document.getElementById('results-code-input')?.value?.trim();
+  if (!raw) return;
+  try {
+    const data = JSON.parse(decodeURIComponent(atob(raw)));
+    if (!data.v || !data.name) throw new Error('invalid');
+    S.reports.push(data);
+    const navRep = document.getElementById('nav-reports');
+    navRep?.classList.remove('locked');
+    goScreen('reports');
+    navRep?.classList.add('active');
+    renderReportsScreen();
+  } catch(e) {
+    errEl.style.display = 'inline';
+    errEl.textContent = 'Código inválido. Verifica que esté completo.';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STEP 4 — VER INFORMES
+═══════════════════════════════════════════════════════════ */
+function renderReportsScreen() {
+  const container = document.getElementById('reports-list');
+  if (S.reports.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><p style="font-weight:600;margin-bottom:6px">Aún no hay informes</p><p style="font-size:13px">Ingresa un código de resultados en el Paso 3.</p></div>`;
+    return;
+  }
+  container.innerHTML = S.reports.map((r, i) => buildFullReport(r, i)).join('');
+}
+
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function buildFullReport(r, idx) {
+  const sc = r.scores;
+  const cv = r.cv || {};
+  const job = r.job || {};
+  const compat  = cv.compat  || 0;
+  const quality  = cv.quality  || 0;
+  const overall = Math.round(
+    compat  * 0.30 +
+    quality * 0.10 +
+    (sc.general || 0) * 0.15 +
+    (sc.tech    || 0) * 0.25 +
+    (sc.sit     || 0) * 0.20
+  );
+
+  const recInfo = overall >= 80
+    ? {cls:'rec-high',   label:'🟢 Alta Compatibilidad',   msg:'El candidato cumple de forma destacada los requisitos del cargo y obtuvo excelentes resultados en todas las evaluaciones. Se recomienda avanzar a entrevista.'}
+    : overall >= 65
+    ? {cls:'rec-mid',    label:'🔵 Candidato Compatible',  msg:'El candidato cumple los principales requisitos del cargo. Presenta un perfil sólido con áreas de oportunidad menores. Recomendado para entrevista.'}
+    : overall >= 50
+    ? {cls:'rec-review', label:'🟡 Revisión Sugerida',     msg:'El candidato muestra potencial pero presenta brechas relevantes. Se recomienda una entrevista adicional para evaluar las áreas de menor puntaje.'}
+    : {cls:'rec-low',    label:'🔴 Baja Compatibilidad',   msg:'El candidato no cumple suficientemente los requisitos del cargo en esta evaluación. Se sugiere considerar otros perfiles antes de avanzar.'};
+
+  const disc = sc.disc || {D:0,I:0,S:0,C:0};
+  const total = Object.values(disc).reduce((a,b)=>a+b,0) || 1;
+  const discPct = {D:Math.round(disc.D/total*100),I:Math.round(disc.I/total*100),S:Math.round(disc.S/total*100),C:Math.round(disc.C/total*100)};
+  const dominant = Object.entries(discPct).sort((a,b)=>b[1]-a[1])[0][0];
+  const discDesc = {D:'Perfil Dominante: Orientado a resultados, decisivo y competitivo. Lidera con determinación y busca lograr metas ambiciosas.',I:'Perfil Influyente: Carismático y comunicativo. Motiva a los demás, trabaja bien en equipo y se destaca en roles relacionales.',S:'Perfil Estable: Paciente, empático y colaborador. Brinda apoyo constante y genera confianza en el equipo.',C:'Perfil Concienzudo: Analítico, preciso y orientado a la calidad. Asegura que los procesos y resultados sean correctos.'};
+  const discNames = {D:'Dominante',I:'Influyente',S:'Estable',C:'Concienzudo'};
+  const discColors = {D:'#DC2626',I:'#D97706',S:'#059669',C:'#0891B2'};
+  const comps = sc.comps || {};
+  const compNames = {liderazgo:'Liderazgo',trabajo_equipo:'Trabajo en Equipo',comunicacion:'Comunicación',resolucion:'Resolución de Problemas',adaptabilidad:'Adaptabilidad'};
+  const found   = cv.found   || [];
+  const missing = cv.missing || [];
+  const ts = r.ts ? new Date(r.ts).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}) : '—';
+
+  return `<div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:32px">
+    <div class="report-header" style="border-radius:0">
+      <div class="report-header-info">
+        <h2>${escapeHtml(r.name)}</h2>
+        <p>${escapeHtml(job.title) || 'Cargo'} · ${ts}</p>
+        <p style="margin-top:4px;opacity:.8">${escapeHtml(r.email)}</p>
+      </div>
+      <div class="report-overall">
+        <div class="report-overall-num">${overall}%</div>
+        <div class="report-overall-lbl">Puntaje Global</div>
+      </div>
+    </div>
+    <div style="padding:24px">
+      <div class="two-col" style="margin-bottom:16px">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-title"><span class="card-title-icon">📊</span> Resultados por Área</div>
+          ${barRow('Compatibilidad con Cargo', compat, 'var(--cyan)')}
+          ${barRow('Calidad del CV', quality, 'var(--accent)')}
+          ${barRow('Conocimiento General', sc.general||0, '#0891B2')}
+          ${barRow('Prueba Técnica', sc.tech||0, '#1E1B4B')}
+          ${barRow('Evaluación Situacional', sc.sit||0, '#059669')}
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-title"><span class="card-title-icon">🎯</span> Datos del Cargo</div>
+          <div class="info-row"><span class="info-row-key">Cargo evaluado</span><span class="info-row-val">${escapeHtml(job.title)||'—'}</span></div>
+          <div class="info-row"><span class="info-row-key">Área</span><span class="info-row-val">${escapeHtml(job.dept)||'—'}</span></div>
+          <div class="info-row"><span class="info-row-key">Exp. requerida</span><span class="info-row-val">${job.exp||0} año(s)</span></div>
+          <div class="info-row"><span class="info-row-key">Educación mín.</span><span class="info-row-val">${escapeHtml(job.edu)||'—'}</span></div>
+          <div class="info-row"><span class="info-row-key">Skills encontradas</span><span class="info-row-val" style="color:var(--success)">${found.length} / ${(found.length+missing.length)}</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">🧠</span> Perfil Conductual DISC</div>
+        <div class="disc-grid">
+          ${['D','I','S','C'].map(d=>`
+            <div class="disc-type">
+              <div class="disc-letter disc-${d}">${d}</div>
+              <div class="disc-info">
+                <div class="disc-name">${discNames[d]}${d===dominant?' <span class="badge badge-success">Principal</span>':''}</div>
+                <div class="disc-pct">${discPct[d]}%</div>
+                <div class="disc-bar"><div class="disc-bar-fill" style="width:${discPct[d]}%;background:${discColors[d]}"></div></div>
+              </div>
+            </div>`).join('')}
+        </div>
+        <p style="font-size:14px;color:var(--txt-2);background:var(--card);padding:12px 16px;border-radius:8px">${discDesc[dominant]}</p>
+      </div>
+      ${Object.keys(comps).length > 0 ? `
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">🎭</span> Competencias Conductuales</div>
+        ${Object.entries(comps).map(([k,v])=>barRow(compNames[k]||k,v,'#059669')).join('')}
+      </div>` : ''}
+      ${(found.length + missing.length) > 0 ? `
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">✅</span> Match de Habilidades</div>
+        <div style="margin-bottom:8px;font-size:13px;font-weight:600;color:var(--success)">Encontradas (${found.length})</div>
+        <div class="skills-found">${found.map(s=>`<span class="skill-pill found">✓ ${escapeHtml(s)}</span>`).join('') || '<span style="color:var(--txt-2)">—</span>'}</div>
+        <div style="margin-top:14px;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--danger)">No encontradas (${missing.length})</div>
+        <div class="skills-missing">${missing.map(s=>`<span class="skill-pill missing">✗ ${escapeHtml(s)}</span>`).join('') || '<span style="color:var(--success)">¡Todas encontradas!</span>'}</div>
+      </div>` : ''}
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">💡</span> Recomendación Final</div>
+        <div class="${recInfo.cls} rec-badge">${recInfo.label}</div>
+        <p style="font-size:14px;line-height:1.7;color:var(--txt-2)">${recInfo.msg}</p>
+      </div>
+      <div style="display:flex;gap:10px;padding-bottom:8px">
+        <button class="btn btn-secondary" onclick="window.print()">🖨️ Imprimir Informe</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function barRow(label, pct, color) {
+  return `<div class="progress-row">
+    <div class="progress-header">
+      <span class="progress-name">${label}</span>
+      <span class="progress-pct">${pct}%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" style="width:${pct}%;background:${color}"></div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CANDIDATE EVALUATION MODE
+═══════════════════════════════════════════════════════════ */
+function enterCandidateMode() {
+  document.getElementById('recruiter-view').style.display = 'none';
+  document.getElementById('candidate-view').style.display = 'flex';
+  document.getElementById('candidate-view').style.flexDirection = 'column';
+  S.cand.module = -1;
+  S.cand.qIdx = 0;
+  S.cand.introShown = false;
+  S.cand.answers = {disc:[],general:[],tech:[],sit:[]};
+  S.cand.scores = {disc:{D:0,I:0,S:0,C:0},general:0,tech:0,sit:0,comps:{}};
+  renderCandidateScreen();
+}
+
+function renderCandidateScreen() {
+  const m = S.cand.module;
+  updateCandProgress();
+  if (m === -1) renderWelcome();
+  else if (m < 4 && !S.cand.introShown) renderModuleIntro(m);
+  else if (m < 4) renderQuestion(m);
+  else renderDone();
+}
+
+function updateCandProgress() {
+  const m = S.cand.module;
+  const pct = m === -1 ? 0 : ((m+1)/5)*100;
+  document.getElementById('cand-prog-fill').style.width = pct + '%';
+  const labels = ['Bienvenida','Perfil Conductual','Conocimiento General','Prueba Técnica','Evaluación Situacional','Completado'];
+  document.getElementById('cand-step-lbl').textContent = labels[Math.max(0, m+1)] || 'Completado';
+}
+
+function renderWelcome() {
+  const jobTitle = S.cand.jobData?.job?.title || 'la posición';
+  const preName  = S.cand.name || '';
+  document.getElementById('cand-screen').innerHTML = `
+    <div class="welcome-card">
+      <div class="welcome-icon">🎯</div>
+      <h2>Evaluación de Candidato</h2>
+      <p>Completa los módulos de evaluación para el cargo de <strong>${jobTitle}</strong>.<br>Responde con honestidad — no hay respuestas incorrectas en los módulos de personalidad.</p>
+      <div class="welcome-modules">
+        <div class="wm-item">🧠 Perfil Conductual DISC</div>
+        <div class="wm-item">📊 Conocimiento General</div>
+        <div class="wm-item">💼 Prueba Técnica</div>
+        <div class="wm-item">🎭 Evaluación Situacional</div>
+      </div>
+      <div class="welcome-fields">
+        <div><label>Tu nombre completo</label><input type="text" id="cand-name" value="${preName}" placeholder="Nombre Apellido"></div>
+        <div><label>Correo electrónico</label><input type="email" id="cand-email" placeholder="nombre@email.com"></div>
+      </div>
+      <button class="btn btn-primary btn-lg" style="width:100%" onclick="startEval()">Comenzar Evaluación →</button>
+    </div>`;
+}
+
+function startEval() {
+  const name  = document.getElementById('cand-name')?.value.trim();
+  const email = document.getElementById('cand-email')?.value.trim();
+  if (!name)  { alert('Por favor ingresa tu nombre.'); return; }
+  if (!email || !email.includes('@')) { alert('Por favor ingresa un correo válido.'); return; }
+  S.cand.name  = name;
+  S.cand.email = email;
+  S.cand.module = 0;
+  S.cand.introShown = false;
+  renderCandidateScreen();
+}
+
+function getModuleMeta(m) {
+  const dept = S.cand.jobData?.job?.dept || '';
+  return [
+    { title:'Perfil Conductual DISC', icon:'🧠', bg:'#6D28D9', desc:'Responde cómo te comportas naturalmente en situaciones laborales. No hay respuestas buenas o malas — este módulo describe tu estilo de trabajo.', q:12, badge:'Personalidad' },
+    { title:'Conocimiento General', icon:'📊', bg:'#0891B2', desc:'Preguntas de razonamiento lógico, verbal y numérico. Selecciona la opción que mejor responde cada pregunta.', q:10, badge:'Cognitivo' },
+    { title:'Prueba Técnica', icon:'💼', bg:'#1E1B4B', desc:'Preguntas específicas del área ' + (dept || 'del cargo') + '. Selecciona la respuesta correcta.', q:10, badge:'Técnico' },
+    { title:'Evaluación Situacional', icon:'🎭', bg:'#059669', desc:'Situaciones reales del trabajo. Selecciona la respuesta que mejor describe cómo actuarías.', q:6, badge:'Situacional' }
+  ][m];
+}
+
+function renderModuleIntro(m) {
+  const meta = getModuleMeta(m);
+  document.getElementById('cand-screen').innerHTML = `
+    <div class="module-intro">
+      <div class="module-intro-icon" style="background:${meta.bg}20"><span style="font-size:32px">${meta.icon}</span></div>
+      <h2>${meta.title}</h2>
+      <p>${meta.desc}</p>
+      <div class="module-meta">
+        <div class="module-meta-item"><div class="module-meta-num">${meta.q}</div><div class="module-meta-lbl">Preguntas</div></div>
+        <div class="module-meta-item"><div class="module-meta-num">~${Math.ceil(meta.q*1.5)}</div><div class="module-meta-lbl">Minutos</div></div>
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="beginModule()">Comenzar Módulo ${m+1} →</button>
+    </div>`;
+}
+
+function beginModule() {
+  S.cand.introShown = true;
+  S.cand.qIdx = 0;
+  renderCandidateScreen();
+}
+
+function getModuleQuestions(m) {
+  const dept = S.cand.jobData?.job?.dept || 'general';
+  if (m === 0) return DISC_Q;
+  if (m === 1) return GENERAL_Q;
+  if (m === 2) return TECH_Q[dept] || TECH_Q.general;
+  return SIT_Q;
+}
+
+let _selectedOpt = null;
+function renderQuestion(m) {
+  const qs = getModuleQuestions(m);
+  const q = qs[S.cand.qIdx];
+  if (!q) { finishModule(m); return; }
+  const meta = getModuleMeta(m);
+  const letters = ['A','B','C','D'];
+  const opts = q.opts;
+
+  document.getElementById('cand-screen').innerHTML = `
+    <div class="question-card">
+      <div class="q-module-badge" style="background:${meta.bg}18;color:${meta.bg}">${meta.icon} ${meta.badge}</div>
+      <div class="q-counter">Pregunta ${S.cand.qIdx+1} de ${qs.length}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-options">
+        ${opts.map((o,i) => {
+          const t = typeof o === 'object' ? o.t : o;
+          return `<button class="q-opt" id="opt-${i}" onclick="selectOpt(${i})">
+            <span class="q-opt-letter">${letters[i]}</span>
+            <span>${t}</span>
+          </button>`;
+        }).join('')}
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-primary" id="next-btn" style="display:none" onclick="nextQuestion(${m})">
+        ${S.cand.qIdx < qs.length-1 ? 'Siguiente →' : 'Finalizar Módulo ✓'}
+      </button>
+    </div>`;
+  _selectedOpt = null;
+}
+
+function selectOpt(i) {
+  _selectedOpt = i;
+  document.querySelectorAll('.q-opt').forEach((el,j) => el.classList.toggle('selected', j===i));
+  document.getElementById('next-btn').style.display = 'inline-flex';
+}
+
+function nextQuestion(m) {
+  if (_selectedOpt === null) return;
+  const keys = ['disc','general','tech','sit'];
+  S.cand.answers[keys[m]].push(_selectedOpt);
+  _selectedOpt = null;
+  S.cand.qIdx++;
+  const qs = getModuleQuestions(m);
+  if (S.cand.qIdx >= qs.length) finishModule(m);
+  else renderQuestion(m);
+}
+
+function finishModule(m) {
+  scoreModule(m);
+  S.cand.module = m + 1;
+  S.cand.introShown = false;
+  S.cand.qIdx = 0;
+  renderCandidateScreen();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCORING
+═══════════════════════════════════════════════════════════ */
+function scoreModule(m) {
+  if (m === 0) {
+    const counts = {D:0,I:0,S:0,C:0};
+    S.cand.answers.disc.forEach((ai, qi) => {
+      const opt = DISC_Q[qi]?.opts[ai];
+      if (opt) counts[opt.d]++;
+    });
+    S.cand.scores.disc = counts;
+  }
+  if (m === 1) {
+    let correct = 0;
+    S.cand.answers.general.forEach((ai, qi) => { if(ai === GENERAL_Q[qi]?.a) correct++; });
+    S.cand.scores.general = Math.round((correct / GENERAL_Q.length) * 100);
+  }
+  if (m === 2) {
+    const dept = S.cand.jobData?.job?.dept || 'general';
+    const qs = TECH_Q[dept] || TECH_Q.general;
+    let correct = 0;
+    S.cand.answers.tech.forEach((ai, qi) => { if(qs[qi] && ai === qs[qi].a) correct++; });
+    S.cand.scores.tech = Math.round((correct / qs.length) * 100);
+  }
+  if (m === 3) {
+    const comps = {liderazgo:0,trabajo_equipo:0,comunicacion:0,resolucion:0,adaptabilidad:0};
+    const maxPer = {liderazgo:0,trabajo_equipo:0,comunicacion:0,resolucion:0,adaptabilidad:0};
+    SIT_Q.forEach((q, qi) => {
+      q.opts.forEach(o => { Object.entries(o.s||{}).forEach(([k,v]) => { maxPer[k]=(maxPer[k]||0)+v; }); });
+      const ai = S.cand.answers.sit[qi];
+      if (ai !== undefined && q.opts[ai]) {
+        Object.entries(q.opts[ai].s||{}).forEach(([k,v]) => { comps[k]=(comps[k]||0)+v; });
+      }
+    });
+    const normalized = {};
+    Object.keys(comps).forEach(k => {
+      normalized[k] = maxPer[k] > 0 ? Math.min(100, Math.round((comps[k]/maxPer[k])*100)) : 50;
+    });
+    S.cand.scores.comps = normalized;
+    S.cand.scores.sit = Math.round(Object.values(normalized).reduce((a,b)=>a+b,0)/Object.values(normalized).length);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DONE SCREEN — show results code
+═══════════════════════════════════════════════════════════ */
+function renderDone() {
+  updateCandProgress();
+  const link = buildResultsLink();
+  document.getElementById('cand-screen').innerHTML = `
+    <div class="done-card">
+      <div class="done-icon">🎉</div>
+      <h2 style="font-size:22px;margin-bottom:10px">¡Evaluación Completada!</h2>
+      <p style="color:var(--txt-2);margin-bottom:24px">Gracias, <strong>${S.cand.name}</strong>. Tus respuestas han sido registradas exitosamente.</p>
+      <div style="background:var(--card);border-radius:10px;padding:20px;text-align:left;margin-bottom:24px">
+        <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">📎 Envía este link al reclutador</div>
+        <p style="font-size:13px;color:var(--txt-2);margin-bottom:10px">Copia el siguiente link y envíalo por WhatsApp, correo o el medio que prefieras:</p>
+        <div class="link-url-box" id="results-link-display">${link}</div>
+        <button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="copyResultsLink()">📋 Copiar Link de Resultados</button>
+      </div>
+      <p style="font-size:13px;color:var(--txt-2)">El equipo de selección revisará tu evaluación al abrir ese link y se pondrá en contacto contigo pronto.</p>
+    </div>`;
+}
+
+function buildResultsLink() {
+  // Use the same base URL as the eval link so the recruiter can open it
+  const base = (typeof getBaseUrl === 'function' ? getBaseUrl() : null)
+    || window.location.href.replace(/#.*/, '');
+  const payload = {
+    v: 1,
+    name: S.cand.name,
+    email: S.cand.email,
+    job: S.cand.jobData?.job || {},
+    cv:  S.cand.jobData?.cv  || {},
+    scores: S.cand.scores,
+    ts: Date.now()
+  };
+  try {
+    return base + '#report=' + btoa(encodeURIComponent(JSON.stringify(payload)));
+  } catch(e) { return ''; }
+}
+
+function copyResultsLink() {
+  const link = document.getElementById('results-link-display')?.textContent;
+  if (!link) return;
+  navigator.clipboard.writeText(link).then(() => showToast('✅ Link copiado')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = link; ta.style.position='fixed'; ta.style.top='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('✅ Link copiado');
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FILE UPLOAD — PDF & DOCX  (for new candidate form)
+═══════════════════════════════════════════════════════════ */
+function handleNewDragOver(e) {
+  e.preventDefault();
+  document.getElementById('new-upload-area').classList.add('drag-over');
+}
+function handleNewDragLeave(e) {
+  document.getElementById('new-upload-area').classList.remove('drag-over');
+}
+function handleNewDrop(e) {
+  e.preventDefault();
+  document.getElementById('new-upload-area').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processNewFile(file);
+}
+function handleNewFileUpload(e) {
+  const file = e.target.files[0];
+  if (file) processNewFile(file);
+}
+
+async function processNewFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const statusEl  = document.getElementById('new-upload-status');
+  const statusTxt = document.getElementById('new-upload-status-text');
+  if (!['pdf','docx','doc'].includes(ext)) { alert('Formato no soportado. Sube un PDF o .docx'); return; }
+  if (file.size > 10*1024*1024) { alert('El archivo supera los 10 MB.'); return; }
+  statusEl.style.display = 'flex';
+  statusTxt.textContent = 'Procesando ' + file.name + '…';
+  try {
+    let text = ext === 'pdf' ? await extractPDF(file) : await extractDocx(file);
+    if (!text || text.trim().length < 20) throw new Error('No se pudo extraer texto.');
+    document.getElementById('new-cv-text').value = text.trim();
+    const wc = text.trim().split(/\s+/).length;
+    statusTxt.textContent = '✅ ' + file.name + ' — ' + wc + ' palabras extraídas';
+  } catch(err) {
+    statusTxt.textContent = '⚠️ No se pudo leer el archivo. Pega el texto manualmente.';
+    console.error(err);
+  }
+}
+
+async function extractPDF(file) {
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: ab}).promise;
+  let text = '';
+  for (let i=1; i<=pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    let lastY = null;
+    content.items.forEach(item => {
+      if (lastY !== null && Math.abs(item.transform[5]-lastY) > 5) text += '\n';
+      text += item.str + ' ';
+      lastY = item.transform[5];
+    });
+    text += '\n';
+  }
+  return text;
+}
+
+async function extractDocx(file) {
+  const ab = await file.arrayBuffer();
+  const result = await mammoth.extractRawText({arrayBuffer: ab});
+  return result.value;
+}
+
+function clearNewFile() {
+  document.getElementById('new-cv-file').value = '';
+  document.getElementById('new-cv-text').value = '';
+  document.getElementById('new-upload-status').style.display = 'none';
+}
+</script>
