@@ -309,6 +309,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
               <option value="tecnologia">Tecnología</option>
               <option value="finanzas">Finanzas</option>
               <option value="rrhh">Recursos Humanos</option>
+              <option value="operarios">Operarios / Producción</option>
+              <option value="calidad">Monitor de Calidad</option>
               <option value="operaciones">Operaciones / General</option>
             </select>
           </div>
@@ -342,8 +344,9 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
           <p class="hint">Escribe una habilidad y presiona Enter o coma para agregarla.</p>
         </div>
         <div class="form-row" style="margin-bottom:0">
-          <label>Descripción del cargo (opcional)</label>
-          <textarea id="job-desc" placeholder="Responsabilidades, contexto del equipo, objetivos del cargo…" style="min-height:80px"></textarea>
+          <label>Descripción completa del cargo (opcional)</label>
+          <textarea id="job-desc" placeholder="Pega aquí la descripción completa del cargo: responsabilidades, funciones, contexto del equipo, objetivos, requisitos adicionales…" style="min-height:140px"></textarea>
+          <p class="hint">Si la completas, el sistema compara el contenido del CV contra toda la descripción (no solo contra la lista de habilidades) para calcular la compatibilidad.</p>
         </div>
       </div>
 
@@ -596,7 +599,27 @@ const GENERAL_Q = [
   { q:"PLANETA : SOL  como  LUNA : ___",
     opts:["Estrella","Planeta","Satélite","Galaxia"], a:1 },
   { q:"Una empresa creció un 20% el primer año y un 25% el segundo. Si empezó con $100.000, ¿cuánto tiene al final del segundo año?",
-    opts:["$145.000","$148.000","$150.000","$152.000"], a:2 }
+    opts:["$145.000","$148.000","$150.000","$152.000"], a:2 },
+  { q:"¿Cuál es el siguiente número en la serie: 5, 10, 20, 40, 80, ___?",
+    opts:["120","140","160","180"], a:2 },
+  { q:"PILOTO es a AVIÓN como CAPITÁN es a:",
+    opts:["Barco","Tren","Auto","Bicicleta"], a:0 },
+  { q:"Todos los ingenieros son técnicos. Ningún técnico es artista. ¿Cuál afirmación es verdadera?",
+    opts:["Todos los artistas son ingenieros","Ningún ingeniero es artista","Algunos técnicos son artistas","Todos los técnicos son ingenieros"], a:1 },
+  { q:"Un producto se vende en $150, lo que representa una ganancia del 25% sobre su costo. ¿Cuál fue el costo del producto?",
+    opts:["$110","$115","$120","$125"], a:2 },
+  { q:"¿Cuál palabra es antónimo de ESCASO?",
+    opts:["Limitado","Abundante","Reducido","Mínimo"], a:1 },
+  { q:"¿Cuál es el siguiente número en la serie: 1, 4, 9, 16, 25, ___?",
+    opts:["30","32","36","49"], a:2 },
+  { q:"LLAVE es a PUERTA como CONTRASEÑA es a:",
+    opts:["Computador","Acceso","Usuario","Internet"], a:1 },
+  { q:"Si 3 máquinas producen 90 piezas en 2 horas, ¿cuántas piezas producirán 5 máquinas en las mismas 2 horas, al mismo ritmo?",
+    opts:["120","135","150","165"], a:2 },
+  { q:"Si hoy es miércoles, ¿qué día de la semana será dentro de 17 días?",
+    opts:["Viernes","Sábado","Domingo","Lunes"], a:1 },
+  { q:"En una empresa la razón entre hombres y mujeres es 3:2. Si hay 60 mujeres, ¿cuántos hombres hay?",
+    opts:["80","85","90","95"], a:2 }
 ];
 
 const TECH_Q = {
@@ -610,7 +633,13 @@ const TECH_Q = {
     { q:"¿Qué es el marketing de contenidos?", opts:["Publicidad pagada","Creación de contenido valioso para atraer audiencia","Envío masivo de correos","Gestión de redes sociales pagadas"], a:1 },
     { q:"¿Cuál de estos es un KPI típico de email marketing?", opts:["Impresiones","Tasa de apertura","Reach","CPM"], a:1 },
     { q:"¿Qué es un CRM en el contexto de marketing?", opts:["Sistema de gestión de relaciones con clientes","Herramienta de diseño gráfico","Plataforma de publicidad programática","Red de distribución de contenido"], a:0 },
-    { q:"¿Qué es el A/B Testing?", opts:["Técnica para comparar dos versiones de algo","Método para calcular el presupuesto","Sistema de automatización de redes","Estrategia de posicionamiento SEO"], a:0 }
+    { q:"¿Qué es el A/B Testing?", opts:["Técnica para comparar dos versiones de algo","Método para calcular el presupuesto","Sistema de automatización de redes","Estrategia de posicionamiento SEO"], a:0 },
+    { q:"¿Qué mide el CTR (Click Through Rate)?", opts:["El número total de visitas al sitio","El porcentaje de personas que hacen clic sobre las que vieron el anuncio","El costo total de la campaña","El tiempo promedio en el sitio"], a:1 },
+    { q:"¿Qué es el 'engagement' en redes sociales?", opts:["El número de seguidores de una cuenta","El nivel de interacción (likes, comentarios, compartidos) que genera el contenido","El presupuesto invertido en publicidad","La frecuencia de publicación"], a:1 },
+    { q:"¿Qué es la segmentación de mercado?", opts:["Vender en distintos países","Dividir el mercado en grupos con características o necesidades similares","Reducir el precio para varios segmentos","Elegir un solo canal de venta"], a:1 },
+    { q:"¿Qué mide la tasa de rebote (bounce rate) de un sitio web?", opts:["El porcentaje de visitantes que abandonan el sitio tras ver una sola página","El número de veces que un usuario vuelve a visitar el sitio","La velocidad de carga del sitio","El número de clics en un banner"], a:0 },
+    { q:"Una campaña de redes sociales tiene muchas impresiones pero muy pocos clics. ¿Cuál es la causa más probable?", opts:["El presupuesto es demasiado alto","El anuncio no es relevante o atractivo para la audiencia que lo ve","Hay demasiados seguidores en la cuenta","El horario de publicación es de madrugada"], a:1 },
+    { q:"Se lanzó una campaña y las ventas no subieron, aunque el tráfico al sitio aumentó bastante. ¿Qué deberías revisar primero?", opts:["El logo de la marca","La experiencia de compra y el proceso de checkout del sitio","El nombre del dominio","La tipografía del sitio web"], a:1 }
   ],
   finanzas:[
     { q:"¿Qué mide el EBITDA?", opts:["Ganancias antes de intereses, impuestos, depreciación y amortización","El nivel de endeudamiento","La liquidez a corto plazo","El valor de mercado de las acciones"], a:0 },
@@ -622,7 +651,13 @@ const TECH_Q = {
     { q:"¿Qué representa el punto de equilibrio?", opts:["El nivel de ventas donde los ingresos igualan los costos totales","El máximo nivel de producción posible","La tasa de retorno mínima aceptable","El margen de utilidad bruta"], a:0 },
     { q:"¿Qué es el flujo de caja libre?", opts:["El efectivo disponible en caja","El efectivo generado después de gastos operativos e inversiones","El total de ingresos del mes","La suma de todos los préstamos bancarios"], a:1 },
     { q:"¿Qué mide la TIR (Tasa Interna de Retorno)?", opts:["La inflación del período","La tasa de descuento que hace el VPN igual a cero","El costo de financiamiento externo","El rendimiento de los bonos del Estado"], a:1 },
-    { q:"¿En qué estado financiero se muestran los activos, pasivos y patrimonio?", opts:["Estado de resultados","Flujo de caja","Balance general","Estado de utilidades retenidas"], a:2 }
+    { q:"¿En qué estado financiero se muestran los activos, pasivos y patrimonio?", opts:["Estado de resultados","Flujo de caja","Balance general","Estado de utilidades retenidas"], a:2 },
+    { q:"¿Qué es el ROA (Return on Assets)?", opts:["La rentabilidad generada sobre el total de activos de la empresa","El costo de los pasivos financieros","El valor de mercado de una acción","El total de ingresos anuales"], a:0 },
+    { q:"¿Qué es la liquidez de una empresa?", opts:["Su capacidad de generar utilidades","Su capacidad de cumplir obligaciones de corto plazo con sus activos disponibles","El valor de sus activos fijos","Su nivel de endeudamiento total"], a:1 },
+    { q:"¿Qué es una cuenta por cobrar?", opts:["Una deuda que la empresa debe pagar a un proveedor","Dinero que los clientes deben a la empresa por ventas a crédito","Un gasto operativo del período","Una inversión en activos fijos"], a:1 },
+    { q:"¿Qué representa el margen bruto?", opts:["Ingresos menos costo de ventas, dividido entre ingresos","El total de gastos administrativos","La utilidad neta del período","El total de impuestos pagados"], a:0 },
+    { q:"Una empresa tiene buena utilidad en el estado de resultados, pero no tiene efectivo para pagar sus cuentas este mes. ¿Qué explica mejor esta situación?", opts:["La empresa está quebrada","Sus ventas a crédito no se han cobrado aún, afectando su flujo de caja aunque contablemente haya utilidad","El estado de resultados está mal calculado","No paga impuestos"], a:1 },
+    { q:"Al comparar dos proyectos de inversión con el mismo costo inicial, ¿cuál usarías como criterio principal para elegir el mejor?", opts:["El que tenga el nombre más conocido","El que tenga mayor VPN (Valor Presente Neto)","El que dure menos tiempo","El que use menos empleados"], a:1 }
   ],
   tecnologia:[
     { q:"¿Qué es una API REST?", opts:["Un tipo de base de datos relacional","Una interfaz para comunicación entre sistemas vía HTTP","Un lenguaje de programación de back-end","Un protocolo de seguridad para redes"], a:1 },
@@ -634,7 +669,13 @@ const TECH_Q = {
     { q:"¿Qué hace un test unitario?", opts:["Prueba el sistema completo","Verifica el funcionamiento de una unidad pequeña de código en aislamiento","Simula el comportamiento del usuario final","Mide el rendimiento del servidor"], a:1 },
     { q:"¿Qué es UX en diseño de software?", opts:["El código visual de la interfaz","La experiencia total del usuario al interactuar con el producto","La velocidad de carga de la aplicación","El sistema de autenticación de usuarios"], a:1 },
     { q:"¿Qué es SQL?", opts:["Un lenguaje de programación orientado a objetos","Un lenguaje para consultar y manipular bases de datos relacionales","Un framework de JavaScript para front-end","Un protocolo de comunicación en red"], a:1 },
-    { q:"¿Qué es la autenticación de dos factores (2FA)?", opts:["Un tipo de cifrado de datos en reposo","Un sistema que requiere dos formas de verificación de identidad","Una técnica de backup doble","Un método para duplicar servidores"], a:1 }
+    { q:"¿Qué es la autenticación de dos factores (2FA)?", opts:["Un tipo de cifrado de datos en reposo","Un sistema que requiere dos formas de verificación de identidad","Una técnica de backup doble","Un método para duplicar servidores"], a:1 },
+    { q:"¿Qué es un 'bug' en desarrollo de software?", opts:["Una nueva funcionalidad","Un error que provoca un comportamiento no esperado en el sistema","Un tipo de base de datos","Una técnica de programación"], a:1 },
+    { q:"¿Qué diferencia hay entre front-end y back-end?", opts:["Son lo mismo","Front-end es lo que ve el usuario; back-end es la lógica y datos del servidor","Front-end es solo para móviles","Back-end es solo diseño visual"], a:1 },
+    { q:"¿Qué es un entorno de pruebas (staging)?", opts:["El servidor de producción real","Una copia del sistema para probar cambios antes de publicarlos","Una base de datos de respaldo","El computador personal del desarrollador"], a:1 },
+    { q:"¿Qué significa 'escalabilidad' de un sistema?", opts:["La capacidad de manejar más carga o usuarios sin perder rendimiento","La cantidad de líneas de código que tiene","La velocidad de internet del servidor","El número de desarrolladores del equipo"], a:0 },
+    { q:"Un sitio web funciona bien con pocos usuarios, pero se cae cuando hay muchas visitas simultáneas. ¿Qué problema describe mejor esta situación?", opts:["Un problema de diseño gráfico","Un problema de escalabilidad del sistema","Un error de ortografía en el contenido","Un problema de nombre de dominio"], a:1 },
+    { q:"Antes de publicar un cambio importante en una aplicación en producción, ¿cuál es la mejor práctica?", opts:["Publicarlo directamente y revisar si hay errores después","Probarlo primero en un entorno de staging y luego desplegarlo","Avisar por correo a todos los usuarios","Esperar a que un usuario reporte el error"], a:1 }
   ],
   ventas:[
     { q:"¿En qué consiste la técnica SPIN Selling?", opts:["Vender cuatro productos al mismo tiempo","Una metodología que usa preguntas de Situación, Problema, Implicación y Necesidad","Una técnica para negociar descuentos","Un sistema de comisiones por volumen"], a:1 },
@@ -646,7 +687,13 @@ const TECH_Q = {
     { q:"¿Qué es la prospección en ventas?", opts:["El cierre de una negociación","La búsqueda activa de posibles clientes","El proceso de cobro a clientes","La capacitación del equipo de ventas"], a:1 },
     { q:"¿Qué es el cross-selling?", opts:["Vender a clientes de la competencia","Ofrecer productos complementarios al que el cliente ya compra o va a comprar","Vender en mercados internacionales","Reducir el precio para cerrar rápido"], a:1 },
     { q:"Un buen vendedor frente a un cliente indeciso debe:", opts:["Presionar para que decida rápido","Hacer preguntas para entender su necesidad real y guiarlo","Ofrecer el mayor descuento posible","Pasar al siguiente prospecto"], a:1 },
-    { q:"¿Qué es un CRM en el área de ventas?", opts:["Un informe de comisiones mensual","Un sistema para gestionar relaciones e información de clientes","Una plataforma de publicidad digital","Un método de entrenamiento para vendedores"], a:1 }
+    { q:"¿Qué es un CRM en el área de ventas?", opts:["Un informe de comisiones mensual","Un sistema para gestionar relaciones e información de clientes","Una plataforma de publicidad digital","Un método de entrenamiento para vendedores"], a:1 },
+    { q:"¿Qué es el 'buyer's journey' (viaje del comprador)?", opts:["El proceso de reembolso de un producto","El proceso que atraviesa un cliente desde que reconoce una necesidad hasta que compra","La ruta de entrega del producto","El horario de atención del vendedor"], a:1 },
+    { q:"¿Qué es el 'rapport' en una negociación de ventas?", opts:["Un descuento especial","Una relación de confianza y conexión con el cliente","Un tipo de contrato","Un reporte de ventas mensual"], a:1 },
+    { q:"¿Qué es un lead calificado?", opts:["Cualquier persona que visita el sitio web","Un contacto que cumple criterios que indican que tiene potencial real de compra","Un cliente que ya compró","Un competidor de la empresa"], a:1 },
+    { q:"¿Qué mide la tasa de cierre (closing rate)?", opts:["El porcentaje de oportunidades que terminan en venta","El número de llamadas realizadas","El tiempo promedio de una negociación","El número de reuniones agendadas"], a:0 },
+    { q:"Un cliente dice 'lo voy a pensar' al final de la reunión. ¿Cuál es la mejor respuesta?", opts:["Aceptar y no volver a contactarlo","Preguntar qué dudas específicas tiene y ofrecer resolverlas ahí mismo","Insistir en que compre de inmediato sin preguntar más","Bajar el precio automáticamente"], a:1 },
+    { q:"Tienes muchos leads pero baja tasa de cierre. ¿Qué deberías revisar primero?", opts:["Contratar más vendedores de inmediato","Si estás calificando bien a los leads y entendiendo su necesidad real antes de ofrecer la solución","Cambiar el logo de la empresa","Aumentar el precio de los productos"], a:1 }
   ],
   rrhh:[
     { q:"¿En qué consiste la evaluación de desempeño 360°?", opts:["Solo el jefe evalúa al colaborador","El colaborador se evalúa a sí mismo únicamente","Evaluación desde múltiples fuentes: jefe, pares, subordinados y autoevaluación","El área de RRHH evalúa a todos al mismo tiempo"], a:2 },
@@ -658,7 +705,13 @@ const TECH_Q = {
     { q:"¿Qué es el employer branding?", opts:["La marca de los productos de la empresa","La estrategia para posicionar a la empresa como empleador atractivo","El presupuesto del área de marketing","El nombre comercial de la empresa"], a:1 },
     { q:"¿Qué mide el eNPS (Employee NPS)?", opts:["La rentabilidad de la empresa","La probabilidad de que un empleado recomiende la empresa como lugar de trabajo","El número de empleados satisfechos con su salario","La tasa de ausentismo mensual"], a:1 },
     { q:"¿Qué es un plan de carrera?", opts:["El plan de gastos del área de RRHH","La ruta de desarrollo profesional que puede seguir un empleado dentro de la organización","El contrato de trabajo de un empleado","El presupuesto de capacitaciones anuales"], a:1 },
-    { q:"¿Qué es la entrevista por competencias?", opts:["Una entrevista enfocada en el salario del candidato","Una técnica que evalúa comportamientos pasados como predictor del desempeño futuro","Una prueba técnica de conocimientos específicos","Una entrevista grupal con varios candidatos"], a:1 }
+    { q:"¿Qué es la entrevista por competencias?", opts:["Una entrevista enfocada en el salario del candidato","Una técnica que evalúa comportamientos pasados como predictor del desempeño futuro","Una prueba técnica de conocimientos específicos","Una entrevista grupal con varios candidatos"], a:1 },
+    { q:"¿Qué es el reclutamiento interno?", opts:["Contratar candidatos externos únicamente","Cubrir una vacante con colaboradores que ya trabajan en la empresa","Contratar a través de una agencia externa","Publicar la vacante solo en redes sociales"], a:1 },
+    { q:"¿Qué es una prueba psicotécnica en selección de personal?", opts:["Un examen médico obligatorio","Una evaluación que mide aptitudes, personalidad o habilidades cognitivas del candidato","Una entrevista informal","Un contrato de trabajo temporal"], a:1 },
+    { q:"¿Qué es el absentismo laboral?", opts:["La rotación de personal","Las ausencias no planificadas de un colaborador a su puesto de trabajo","El número de vacaciones tomadas","La cantidad de horas extra trabajadas"], a:1 },
+    { q:"¿Qué busca medir una evaluación de desempeño?", opts:["El nivel de estudios del colaborador","El cumplimiento de objetivos y comportamientos esperados en el cargo","El salario que debería recibir","La antigüedad en la empresa"], a:1 },
+    { q:"Un colaborador de alto desempeño empieza a llegar tarde seguido y a bajar su rendimiento. ¿Cuál es la mejor primera acción de RRHH o su jefe directo?", opts:["Despedirlo de inmediato","Tener una conversación privada para entender qué está pasando antes de tomar medidas","Ignorarlo porque antes rendía bien","Bajarle el sueldo como advertencia"], a:1 },
+    { q:"Estás evaluando dos candidatos para el mismo cargo: uno tiene más experiencia técnica pero mal encaje cultural en la entrevista, otro tiene menos experiencia pero gran actitud y encaje. ¿Qué deberías considerar antes de decidir?", opts:["Elegir siempre al de más experiencia sin más análisis","Evaluar qué tan entrenable es la habilidad técnica faltante versus qué tan difícil es cambiar una actitud o encaje cultural","Elegir al azar","Rechazar a ambos y volver a publicar la vacante"], a:1 }
   ],
   general:[
     { q:"¿Qué es la gestión del tiempo?", opts:["Registrar las horas de trabajo","Organizar y planificar tareas para ser más productivo","Reducir las horas laborales","Automatizar procesos administrativos"], a:1 },
@@ -670,7 +723,49 @@ const TECH_Q = {
     { q:"¿Qué es la metodología Kanban?", opts:["Un sistema de pago de nómina","Un método visual para gestionar flujos de trabajo con tarjetas y columnas","Un tipo de evaluación de desempeño","Una técnica de análisis financiero"], a:1 },
     { q:"En un equipo de trabajo, ¿qué rol cumple el facilitador?", opts:["Toma todas las decisiones importantes","Guía los procesos del equipo sin imponer su opinión","Realiza el trabajo más técnico del grupo","Evalúa el desempeño de cada miembro"], a:1 },
     { q:"¿Qué es la gestión por procesos?", opts:["Evaluar el desempeño individualmente","Enfoque que identifica, diseña y mejora los procesos de la organización para lograr resultados","Un método para controlar el presupuesto","Un sistema de control de calidad de productos"], a:1 },
-    { q:"¿Cuál de estos elementos es clave en la negociación efectiva?", opts:["Imponer tu posición desde el inicio","Buscar el beneficio mutuo y entender los intereses de la otra parte","Ceder en todo para evitar conflictos","Evitar reuniones cara a cara"], a:1 }
+    { q:"¿Cuál de estos elementos es clave en la negociación efectiva?", opts:["Imponer tu posición desde el inicio","Buscar el beneficio mutuo y entender los intereses de la otra parte","Ceder en todo para evitar conflictos","Evitar reuniones cara a cara"], a:1 },
+    { q:"¿Qué es un indicador clave de desempeño (KPI)?", opts:["Un documento legal de la empresa","Una métrica que permite medir el avance hacia un objetivo específico","El sueldo de un colaborador","El organigrama de la empresa"], a:1 },
+    { q:"¿Qué es la mejora continua?", opts:["Cambiar de trabajo constantemente","Un enfoque de buscar pequeñas mejoras constantes en procesos y resultados","Aumentar el precio de los productos cada mes","Contratar más personal cada año"], a:1 },
+    { q:"¿Qué es la escucha activa?", opts:["Escuchar mientras piensas en tu respuesta","Prestar atención completa a lo que dice el otro, para entender antes de responder","Repetir literalmente lo que dice la otra persona","Evitar hacer preguntas durante una conversación"], a:1 },
+    { q:"¿Qué caracteriza a un buen trabajo en equipo?", opts:["Que una sola persona tome todas las decisiones","Colaboración, comunicación clara y objetivos compartidos entre los miembros","Que cada uno trabaje sin comunicarse con los demás","Competir entre compañeros por destacar"], a:1 },
+    { q:"Recibes instrucciones poco claras de tu jefe sobre una tarea urgente. ¿Qué es lo más recomendable hacer?", opts:["Asumir lo que crees que se pidió y avanzar sin confirmar","Hacer preguntas específicas para aclarar antes de comenzar a trabajar","Esperar sin avanzar hasta que te vuelvan a explicar todo de nuevo","Delegar la tarea a otra persona sin avisar"], a:1 },
+    { q:"Notas que un proceso de tu área se repite de forma ineficiente y toma más tiempo del necesario. ¿Cuál es la mejor actitud?", opts:["Seguir haciéndolo igual porque así se ha hecho siempre","Proponer una mejora concreta a quien corresponda, con una idea de cómo optimizarlo","Quejarte con tus compañeros sin proponer nada","Ignorarlo porque no es tu responsabilidad"], a:1 }
+  ],
+  operarios:[
+    { q:"¿Qué significa EPP en el contexto de seguridad laboral?", opts:["Equipo de Protección Personal","Estándar de Producción y Procesos","Evaluación de Personal y Productividad","Entrega de Pedidos y Paquetes"], a:0 },
+    { q:"Si durante tu turno notas que una máquina hace un ruido extraño o funciona de forma anormal, ¿qué debes hacer?", opts:["Seguir trabajando y reportarlo al final del turno","Detener el uso de la máquina y avisar de inmediato a tu supervisor","Intentar repararla tú mismo aunque no sea tu función","Ignorarlo si el ruido no es muy fuerte"], a:1 },
+    { q:"¿Qué es la metodología 5S usada en muchas plantas de producción?", opts:["Un sistema de pago por productividad","Una metodología de organización y limpieza del puesto de trabajo (Clasificar, Ordenar, Limpiar, Estandarizar, Disciplina)","Un tipo de maquinaria industrial","Un turno de trabajo rotativo"], a:1 },
+    { q:"¿Por qué es importante seguir el procedimiento estándar de una tarea, aunque tú tengas una forma 'más rápida' de hacerla?", opts:["No es importante si el resultado final es el mismo","Porque el procedimiento estándar generalmente asegura seguridad y calidad consistente, aunque parezca más lento","Porque así lo dice el reglamento sin ninguna razón práctica","Solo es importante cuando hay un supervisor mirando"], a:1 },
+    { q:"¿Qué debes hacer si detectas un producto con un defecto durante el proceso de producción?", opts:["Dejarlo pasar si parece un defecto menor","Separarlo y reportarlo según el procedimiento de calidad de la planta","Esconderlo para no atrasar la producción","Corregirlo tú mismo sin avisar a nadie"], a:1 },
+    { q:"¿Qué significa 'tiempo de inactividad' (downtime) en una línea de producción?", opts:["El tiempo de descanso programado de los operarios","El tiempo en que la línea o máquina no está produciendo por alguna razón (falla, mantenimiento, etc.)","El tiempo que toma capacitar a un nuevo operario","El horario de cambio de turno"], a:1 },
+    { q:"Estás produciendo a buen ritmo, pero notas que te falta materia prima para terminar el lote antes de que se acabe. ¿Qué haces primero?", opts:["Sigues trabajando lo más rápido posible hasta que se acabe el material","Avisas con anticipación a tu supervisor o al área de abastecimiento para evitar parar la línea","Tomas materia prima de otra línea sin avisar","Dejas de trabajar sin decir nada hasta que llegue más material"], a:1 },
+    { q:"Un compañero de tu línea está teniendo un mal día y comete varios errores que afectan tu parte del proceso. ¿Cuál es la mejor actitud?", opts:["Reclamarle fuerte delante de todos para que se dé cuenta","Hablar con él de forma respetuosa, ofrecer ayuda si es posible, y avisar al supervisor si el problema persiste","Ignorarlo y dejar que el supervisor lo note por sí mismo","Hacer su trabajo por él sin decir nada para no generar problemas"], a:1 },
+    { q:"¿Qué es un 'lote' en un proceso de producción?", opts:["El nombre del turno de trabajo","Un grupo o cantidad determinada de productos que se procesan juntos","El área física de la planta","El tipo de máquina usada en la línea"], a:1 },
+    { q:"¿Por qué es importante la puntualidad al inicio de un turno en una línea de producción?", opts:["No tiene mucho impacto si llegas poco después","Porque un retraso puede detener o desbalancear toda la línea, afectando a todo el equipo","Solo afecta el sueldo de quien llega tarde","Es solo una formalidad sin impacto real"], a:1 },
+    { q:"¿Qué debes hacer antes de operar una máquina que no conoces bien?", opts:["Probarla directamente para aprender sobre la marcha","Pedir capacitación o instrucciones a tu supervisor antes de operarla","Preguntarle a otro operario en medio del turno sin dejar de producir","Operarla solo si parece sencilla de usar"], a:1 },
+    { q:"¿Qué es el mantenimiento preventivo de una máquina?", opts:["Repararla después de que se dañe","Revisiones y cuidados programados para evitar fallas antes de que ocurran","Limpiarla solo cuando se ve muy sucia","Un tipo de máquina de repuesto"], a:1 },
+    { q:"Se te asigna una tarea distinta a la habitual porque falta personal en otra línea ese día. ¿Cuál es la mejor actitud?", opts:["Negarte porque no es tu función habitual","Mostrar disposición, pedir que te expliquen bien la nueva tarea y hacerla con cuidado","Hacerla de mala gana y sin prestar atención","Hacerla como creas que es sin pedir instrucciones"], a:1 },
+    { q:"¿Qué significa trabajar 'bajo estándar' de calidad en producción?", opts:["Trabajar más rápido que el promedio","Producir por debajo de los requisitos de calidad definidos para el producto","Trabajar con menos personal del habitual","Usar menos materia prima de la necesaria"], a:1 },
+    { q:"¿Cuál de estas es una señal de que se debe usar el equipo de protección personal (EPP)?", opts:["Solo cuando el supervisor está presente","Siempre que la tarea o el área de trabajo lo requiera, todo el turno","Solo si otros compañeros también lo usan","Solo durante la primera semana de trabajo"], a:1 },
+    { q:"Terminas tu tarea antes de lo esperado y tienes tiempo libre en tu turno. ¿Qué es lo más recomendable hacer?", opts:["Sentarte a esperar que termine el turno","Avisar a tu supervisor y preguntar si puedes apoyar en otra tarea o línea","Irte antes de que termine el turno","Trabajar más lento la próxima vez para no terminar temprano"], a:1 }
+  ],
+  calidad:[
+    { q:"¿Cuál es el objetivo principal del control de calidad en un proceso productivo?", opts:["Producir la mayor cantidad posible sin importar el resultado","Verificar que los productos cumplan con los estándares y especificaciones definidas","Reducir el número de trabajadores necesarios","Aumentar el precio final del producto"], a:1 },
+    { q:"¿Qué es un 'defecto crítico' en control de calidad?", opts:["Un defecto estético menor que casi no se nota","Un defecto que puede afectar la seguridad o funcionalidad del producto de forma grave","Un error en el empaque del producto","Un producto con color ligeramente distinto"], a:1 },
+    { q:"¿Qué es un muestreo de calidad?", opts:["Revisar el 100% de la producción siempre","Inspeccionar una cantidad representativa del lote para inferir la calidad del total","Preguntar a los clientes su opinión sobre el producto","Revisar solo los primeros productos del día"], a:1 },
+    { q:"¿Para qué sirve una lista de verificación (checklist) de calidad?", opts:["Para decorar el área de trabajo","Para asegurar que se revisen de forma consistente todos los puntos críticos de un proceso o producto","Para reemplazar la capacitación del personal","Para calcular el sueldo de los operarios"], a:1 },
+    { q:"¿Qué debes hacer si encuentras un producto que no cumple con el estándar de calidad?", opts:["Dejarlo pasar si la mayoría del lote está bien","Registrarlo, separarlo del lote conforme y seguir el procedimiento de no conformidad establecido","Corregirlo sin dejar registro de lo ocurrido","Decidir tú mismo si se puede vender igual"], a:1 },
+    { q:"¿Qué es una acción correctiva en gestión de calidad?", opts:["Una sanción para el trabajador responsable del error","Una acción tomada para eliminar la causa de un defecto y evitar que se repita","Un descuento aplicado al cliente afectado","Un cambio de turno del personal"], a:1 },
+    { q:"¿Qué es la trazabilidad de un producto?", opts:["El precio de venta final del producto","La capacidad de rastrear el historial, origen y proceso de un producto en toda la cadena","El tiempo que dura en bodega","El nombre comercial del producto"], a:1 },
+    { q:"Estás revisando un lote y el 8% de las muestras tiene un defecto menor, pero el estándar permite máximo 5%. ¿Qué debes hacer?", opts:["Aprobar el lote porque el defecto es menor","Rechazar o poner en cuarentena el lote según el procedimiento, ya que supera el límite permitido, y reportarlo","Aprobar solo la mitad del lote sin revisar el resto","Ignorarlo si nadie más lo revisó"], a:1 },
+    { q:"Un supervisor de producción te pide que 'dejes pasar' un lote con defectos para no atrasar una entrega urgente. ¿Cuál es la actitud correcta?", opts:["Aceptar porque el supervisor tiene más autoridad","Explicar el riesgo de aprobar el lote fuera de estándar y seguir el procedimiento de calidad, escalando la decisión si es necesario","Aprobarlo en silencio para evitar el conflicto","Rechazarlo sin explicar nada y retirarte"], a:1 },
+    { q:"¿Qué es un estándar o especificación de calidad?", opts:["Una sugerencia opcional para el proceso","Un criterio definido y medible que un producto o proceso debe cumplir","El precio mínimo de venta de un producto","El número de trabajadores necesarios para un proceso"], a:1 },
+    { q:"¿Por qué es importante registrar y documentar los hallazgos de una inspección de calidad?", opts:["Es solo un trámite sin utilidad real","Permite tener evidencia, identificar patrones de fallas recurrentes y tomar decisiones basadas en datos","Sirve únicamente para el archivo histórico de la empresa","Solo es necesario si hay una auditoría externa"], a:1 },
+    { q:"¿Qué diferencia hay entre 'inspección' y 'auditoría' de calidad?", opts:["Son exactamente lo mismo","La inspección revisa productos o procesos puntuales; la auditoría evalúa si el sistema de gestión de calidad se cumple de forma más integral","La auditoría la hace cualquier persona sin capacitación","La inspección solo aplica a productos terminados"], a:1 },
+    { q:"¿Qué es la variabilidad de un proceso en control de calidad?", opts:["El precio que varía según el cliente","Las diferencias o fluctuaciones naturales que puede tener un proceso o producto entre una unidad y otra","El cambio de turno de los operarios","El tipo de materia prima usada"], a:1 },
+    { q:"Notas que un mismo tipo de defecto se repite varias veces en distintos lotes durante la semana. ¿Cuál es la mejor acción?", opts:["Seguir reportando cada caso por separado sin buscar la causa","Investigar la causa raíz del problema recurrente y proponer una acción correctiva de fondo","Ignorarlo si cada lote individualmente pasa el muestreo","Pedir que se reduzca el estándar de calidad para que deje de fallar"], a:1 },
+    { q:"¿Qué papel cumple la comunicación clara entre el área de calidad y producción?", opts:["No es muy relevante, cada área trabaja por separado","Es clave para que los hallazgos de calidad se entiendan y se corrijan a tiempo en el proceso productivo","Solo es necesaria cuando hay una queja de un cliente","Solo debe ocurrir una vez al mes en una reunión formal"], a:1 },
+    { q:"¿Qué actitud es más importante en un rol de monitoreo de calidad?", opts:["Ser flexible con los estándares para no generar conflictos","Tener atención al detalle, objetividad e imparcialidad al aplicar los criterios de calidad","Aprobar la mayor cantidad de lotes posible","Evitar reportar problemas para mantener buena relación con producción"], a:1 }
   ]
 };
 TECH_Q.operaciones = TECH_Q.general;
@@ -731,7 +826,7 @@ function handleHashRoute() {
       const payload = raw.j ? {
         job: { title: raw.j.t||'', dept: raw.j.d||'', exp: raw.j.e||0, edu: raw.j.u||'', skills: raw.j.s||[] },
         name: raw.n || '',
-        cv: { compat: raw.c||0, quality: raw.q||0, found: [], missing: [] }
+        cv: { compat: raw.c||0, quality: raw.q||0, found: raw.f||[], missing: raw.m||[], descMatch: raw.dm ?? null }
       } : raw;
       S.cand.jobData = payload;
       S.cand.name = payload.name || '';
@@ -860,6 +955,16 @@ function norm(t) {
   return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 }
 
+const DESC_STOPWORDS = new Set(['para','como','este','esta','estos','estas','entre','sobre','sera','seran','tiene','tienen','deben','debe','desde','hasta','cuando','donde','quien','cuales','cual','todo','toda','todos','todas','otro','otra','otros','otras','tambien','cada','sino','pero','porque','segun','ademas','dentro','fuera','durante','mediante','mismo','misma','mismos','mismas','solo','sola','solos','solas','muy','mas','menos','poco','pocos','mucho','muchos','buena','buen','bueno','buenos','general','generales','area','areas','trabajo','trabajos','cargo','cargos','empresa','empresas','equipo','equipos','persona','personas','forma','parte','partes','nivel','niveles','proceso','procesos','puesto','puestos','funcion','funciones','contexto','objetivo','objetivos','responsable','responsables','requisito','requisitos','experiencia','conocimiento','conocimientos','habilidad','habilidades','capacidad','capacidades']);
+
+function extractKeywords(text) {
+  const n = norm(text);
+  const words = n.match(/[a-z]{4,}/g) || [];
+  const uniq = [];
+  words.forEach(w => { if (!DESC_STOPWORDS.has(w) && !uniq.includes(w)) uniq.push(w); });
+  return uniq.slice(0, 40);
+}
+
 function analyzeCV(text) {
   const n = norm(text);
   const sec = {
@@ -896,9 +1001,20 @@ function analyzeCV(text) {
   const expScore = detYrs >= S.job.exp ? 20 : detYrs >= S.job.exp-1 ? 12 : detYrs > 0 ? 8 : 5;
 
   const skillPct = S.job.skills.length ? found.length/S.job.skills.length : 0.5;
-  const compat = Math.min(100, Math.round(skillPct*60 + eduScore + expScore));
 
-  return { quality, compat, found, missing, sections: sec, wordCount: wc, detYrs, detEdu };
+  const descKeywords = (S.job.desc || '').trim().length >= 15 ? extractKeywords(S.job.desc) : [];
+  const hasDesc = descKeywords.length >= 3;
+  let descMatch = null;
+  let compat;
+  if (hasDesc) {
+    const descFoundCount = descKeywords.filter(k => n.includes(k)).length;
+    descMatch = Math.round((descFoundCount / descKeywords.length) * 100);
+    compat = Math.min(100, Math.round(skillPct*45 + (descMatch/100)*15 + eduScore + expScore));
+  } else {
+    compat = Math.min(100, Math.round(skillPct*60 + eduScore + expScore));
+  }
+
+  return { quality, compat, found, missing, descMatch, sections: sec, wordCount: wc, detYrs, detEdu };
 }
 
 function addCandidateToRanking() {
@@ -940,6 +1056,9 @@ function renderRankingScreen() {
     const skillsText = S.job.skills.length
       ? `${c.found.length}/${S.job.skills.length} skills`
       : '—';
+    const descText = (c.descMatch !== null && c.descMatch !== undefined)
+      ? `<br><span title="Coincidencia del CV con la descripción completa del cargo">desc: ${c.descMatch}%</span>`
+      : '';
     return `<tr>
       <td><span class="rank-num ${rankClass}">${i+1}</span></td>
       <td class="cand-name-cell">${c.name}</td>
@@ -950,7 +1069,7 @@ function renderRankingScreen() {
         </div>
       </td>
       <td><span style="color:var(--txt-2)">${c.quality}%</span></td>
-      <td style="font-size:13px;color:var(--txt-2)">${skillsText}</td>
+      <td style="font-size:13px;color:var(--txt-2)">${skillsText}${descText}</td>
       <td>${badge}</td>
       <td style="text-align:center">
         <input type="checkbox" class="cand-check" ${c.selected?'checked':''} onchange="toggleSelect(${i})" title="Seleccionar para evaluación">
@@ -1016,7 +1135,10 @@ function generateEvalLink(cand) {
     j: { t: S.job.title, d: S.job.dept, e: S.job.exp, u: S.job.edu, s: S.job.skills },
     n: cand.name,
     c: cand.compat,
-    q: cand.quality
+    q: cand.quality,
+    f: cand.found || [],
+    m: cand.missing || [],
+    dm: cand.descMatch
   };
   try {
     return base + '#eval=' + btoa(encodeURIComponent(JSON.stringify(payload)));
@@ -1187,6 +1309,7 @@ function buildFullReport(r, idx) {
           <div class="info-row"><span class="info-row-key">Exp. requerida</span><span class="info-row-val">${job.exp||0} año(s)</span></div>
           <div class="info-row"><span class="info-row-key">Educación mín.</span><span class="info-row-val">${escapeHtml(job.edu)||'—'}</span></div>
           <div class="info-row"><span class="info-row-key">Skills encontradas</span><span class="info-row-val" style="color:var(--success)">${found.length} / ${(found.length+missing.length)}</span></div>
+          ${cv.descMatch !== null && cv.descMatch !== undefined ? `<div class="info-row"><span class="info-row-key">Coincidencia con descripción del cargo</span><span class="info-row-val">${cv.descMatch}%</span></div>` : ''}
         </div>
       </div>
       <div class="card">
@@ -1242,6 +1365,33 @@ function barRow(label, pct, color) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   QUESTION RANDOMIZATION — anti-leak: each candidate gets a
+   different sample + option order, sourced from a larger pool
+═══════════════════════════════════════════════════════════ */
+function shuffleArr(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function shuffleMCQOptions(q) {
+  const order = shuffleArr(q.opts.map((_, i) => i));
+  return { ...q, opts: order.map(i => q.opts[i]), a: order.indexOf(q.a) };
+}
+function buildSessionQuestions() {
+  const dept = S.cand.jobData?.job?.dept || 'general';
+  const techPool = TECH_Q[dept] || TECH_Q.general;
+  return {
+    disc: shuffleArr(DISC_Q),
+    general: shuffleArr(GENERAL_Q).slice(0, 10).map(shuffleMCQOptions),
+    tech: shuffleArr(techPool).slice(0, 10).map(shuffleMCQOptions),
+    sit: shuffleArr(SIT_Q)
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
    CANDIDATE EVALUATION MODE
 ═══════════════════════════════════════════════════════════ */
 function enterCandidateMode() {
@@ -1253,6 +1403,7 @@ function enterCandidateMode() {
   S.cand.introShown = false;
   S.cand.answers = {disc:[],general:[],tech:[],sit:[]};
   S.cand.scores = {disc:{D:0,I:0,S:0,C:0},general:0,tech:0,sit:0,comps:{}};
+  S.cand.sessionQ = buildSessionQuestions();
   renderCandidateScreen();
 }
 
@@ -1339,11 +1490,11 @@ function beginModule() {
 }
 
 function getModuleQuestions(m) {
-  const dept = S.cand.jobData?.job?.dept || 'general';
-  if (m === 0) return DISC_Q;
-  if (m === 1) return GENERAL_Q;
-  if (m === 2) return TECH_Q[dept] || TECH_Q.general;
-  return SIT_Q;
+  if (!S.cand.sessionQ) S.cand.sessionQ = buildSessionQuestions();
+  if (m === 0) return S.cand.sessionQ.disc;
+  if (m === 1) return S.cand.sessionQ.general;
+  if (m === 2) return S.cand.sessionQ.tech;
+  return S.cand.sessionQ.sit;
 }
 
 let _selectedOpt = null;
@@ -1407,22 +1558,22 @@ function finishModule(m) {
    SCORING
 ═══════════════════════════════════════════════════════════ */
 function scoreModule(m) {
+  const sq = S.cand.sessionQ;
   if (m === 0) {
     const counts = {D:0,I:0,S:0,C:0};
     S.cand.answers.disc.forEach((ai, qi) => {
-      const opt = DISC_Q[qi]?.opts[ai];
+      const opt = sq.disc[qi]?.opts[ai];
       if (opt) counts[opt.d]++;
     });
     S.cand.scores.disc = counts;
   }
   if (m === 1) {
     let correct = 0;
-    S.cand.answers.general.forEach((ai, qi) => { if(ai === GENERAL_Q[qi]?.a) correct++; });
-    S.cand.scores.general = Math.round((correct / GENERAL_Q.length) * 100);
+    S.cand.answers.general.forEach((ai, qi) => { if(ai === sq.general[qi]?.a) correct++; });
+    S.cand.scores.general = Math.round((correct / sq.general.length) * 100);
   }
   if (m === 2) {
-    const dept = S.cand.jobData?.job?.dept || 'general';
-    const qs = TECH_Q[dept] || TECH_Q.general;
+    const qs = sq.tech;
     let correct = 0;
     S.cand.answers.tech.forEach((ai, qi) => { if(qs[qi] && ai === qs[qi].a) correct++; });
     S.cand.scores.tech = Math.round((correct / qs.length) * 100);
@@ -1430,7 +1581,7 @@ function scoreModule(m) {
   if (m === 3) {
     const comps = {liderazgo:0,trabajo_equipo:0,comunicacion:0,resolucion:0,adaptabilidad:0};
     const maxPer = {liderazgo:0,trabajo_equipo:0,comunicacion:0,resolucion:0,adaptabilidad:0};
-    SIT_Q.forEach((q, qi) => {
+    sq.sit.forEach((q, qi) => {
       const qMax = {};
       q.opts.forEach(o => { Object.entries(o.s||{}).forEach(([k,v]) => { qMax[k] = Math.max(qMax[k]||0, v); }); });
       Object.entries(qMax).forEach(([k,v]) => { maxPer[k] = (maxPer[k]||0) + v; });
