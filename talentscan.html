@@ -1431,7 +1431,9 @@ function scoreModule(m) {
     const comps = {liderazgo:0,trabajo_equipo:0,comunicacion:0,resolucion:0,adaptabilidad:0};
     const maxPer = {liderazgo:0,trabajo_equipo:0,comunicacion:0,resolucion:0,adaptabilidad:0};
     SIT_Q.forEach((q, qi) => {
-      q.opts.forEach(o => { Object.entries(o.s||{}).forEach(([k,v]) => { maxPer[k]=(maxPer[k]||0)+v; }); });
+      const qMax = {};
+      q.opts.forEach(o => { Object.entries(o.s||{}).forEach(([k,v]) => { qMax[k] = Math.max(qMax[k]||0, v); }); });
+      Object.entries(qMax).forEach(([k,v]) => { maxPer[k] = (maxPer[k]||0) + v; });
       const ai = S.cand.answers.sit[qi];
       if (ai !== undefined && q.opts[ai]) {
         Object.entries(q.opts[ai].s||{}).forEach(([k,v]) => { comps[k]=(comps[k]||0)+v; });
