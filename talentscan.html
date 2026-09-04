@@ -282,6 +282,9 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
       <button class="theme-toggle" onclick="toggleTheme()">
         <span id="theme-icon">🌙</span> Cambiar tema
       </button>
+      <button class="theme-toggle" onclick="resetProcess()" title="Borra el cargo, candidatos e informes guardados en este navegador">
+        🗑️ Nuevo proceso de selección
+      </button>
     </div>
   </aside>
 
@@ -516,6 +519,71 @@ const S = {
     scores:{ disc:{D:0,I:0,S:0,C:0}, general:0, tech:0, sit:0, comps:{} }
   }
 };
+
+/* ═══════════════════════════════════════════════════════════
+   PERSISTENCIA LOCAL — recuerda cargo, candidatos e informes
+   en este navegador entre sesiones (no hay backend / servidor)
+═══════════════════════════════════════════════════════════ */
+const STORAGE_KEY = 'talentscan_recruiter_data_v1';
+
+function saveRecruiterState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      job: S.job,
+      candidates: S.candidates,
+      reports: S.reports
+    }));
+  } catch(e) { /* almacenamiento lleno o no disponible — se ignora */ }
+}
+
+function loadRecruiterState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.job) Object.assign(S.job, data.job);
+    if (Array.isArray(data.candidates)) S.candidates = data.candidates;
+    if (Array.isArray(data.reports)) S.reports = data.reports;
+  } catch(e) { /* datos corruptos — se ignora */ }
+}
+
+function resetProcess() {
+  if (!confirm('¿Borrar el cargo, los candidatos y los informes guardados en este navegador? Esta acción no se puede deshacer.')) return;
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  window.location.href = window.location.href.replace(/#.*/, '');
+}
+
+function restoreRecruiterUI() {
+  if (S.job.title) {
+    const elTitle = document.getElementById('job-title');
+    const elDept  = document.getElementById('job-dept');
+    const elExp   = document.getElementById('job-exp');
+    const elEdu   = document.getElementById('job-edu');
+    const elDesc  = document.getElementById('job-desc');
+    if (elTitle) elTitle.value = S.job.title;
+    if (elDept)  elDept.value  = S.job.dept;
+    if (elExp)   elExp.value   = S.job.exp;
+    if (elEdu)   elEdu.value   = S.job.edu;
+    if (elDesc)  elDesc.value  = S.job.desc;
+    renderSkills();
+    document.getElementById('nav-setup')?.classList.add('done');
+    document.getElementById('nav-ranking')?.classList.remove('locked');
+    const rjt = document.getElementById('ranking-job-title');
+    if (rjt) rjt.textContent = '"' + S.job.title + '"';
+  }
+  if (S.candidates.length) {
+    renderRankingScreen();
+    if (S.candidates.some(c => c.selected)) {
+      document.getElementById('nav-links')?.classList.remove('locked');
+      renderLinksScreen();
+    }
+  }
+  if (S.reports.length) {
+    document.getElementById('nav-links')?.classList.remove('locked');
+    document.getElementById('nav-reports')?.classList.remove('locked');
+    renderReportsScreen();
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════
    QUESTION DATA
@@ -915,6 +983,7 @@ function handleHashRoute() {
       const data = JSON.parse(decodeURIComponent(atob(hash.slice(8))));
       if (data.v && data.name) {
         S.reports.push(data);
+        saveRecruiterState();
         ['ranking','links','reports'].forEach(s => {
           const n = document.getElementById('nav-' + s);
           if (n) n.classList.remove('locked');
@@ -928,7 +997,12 @@ function handleHashRoute() {
     }
   }
 }
-window.addEventListener('load', handleHashRoute);
+function initApp() {
+  loadRecruiterState();
+  restoreRecruiterUI();
+  handleHashRoute();
+}
+window.addEventListener('load', initApp);
 window.addEventListener('hashchange', handleHashRoute);
 
 /* ═══════════════════════════════════════════════════════════
@@ -1022,6 +1096,7 @@ function saveJob() {
   goScreen('ranking');
   navR.classList.add('active');
   renderRankingScreen();
+  saveRecruiterState();
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1113,6 +1188,7 @@ function addCandidateToRanking() {
   document.getElementById('new-cv-file').value = '';
 
   renderRankingScreen();
+  saveRecruiterState();
   showToast('✅ ' + name + ' agregado al ranking');
 }
 
@@ -1159,6 +1235,7 @@ function renderRankingScreen() {
 
 function toggleSelect(i) {
   S.candidates[i].selected = !S.candidates[i].selected;
+  saveRecruiterState();
 }
 
 function goToLinks() {
@@ -1297,6 +1374,7 @@ function submitResultsCode() {
     const data = JSON.parse(decodeURIComponent(atob(raw)));
     if (!data.v || !data.name) throw new Error('invalid');
     S.reports.push(data);
+    saveRecruiterState();
     const navRep = document.getElementById('nav-reports');
     navRep?.classList.remove('locked');
     goScreen('reports');
