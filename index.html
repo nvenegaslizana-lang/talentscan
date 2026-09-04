@@ -1317,19 +1317,21 @@ function renderReportsScreen() {
     container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><p style="font-weight:600;margin-bottom:6px">Aún no hay informes</p><p style="font-size:13px">Ingresa un código de resultados en el Paso 3.</p></div>`;
     return;
   }
-  container.innerHTML = S.reports.map((r, i) => buildFullReport(r, i)).join('');
+  container.innerHTML = buildReportsSummaryTable(S.reports) + S.reports.map((r, i) => buildFullReport(r, i)).join('');
 }
 
 function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-function buildFullReport(r, idx) {
-  const sc = r.scores;
+function computeOverall(r) {
+  const sc = r.scores || {};
   const cv = r.cv || {};
-  const job = r.job || {};
   const compat  = cv.compat  || 0;
-  const quality  = cv.quality  || 0;
+  const quality = cv.quality || 0;
+  const testScore = Math.round(
+    ((sc.general || 0) * 15 + (sc.tech || 0) * 25 + (sc.sit || 0) * 20) / 60
+  );
   const overall = Math.round(
     compat  * 0.30 +
     quality * 0.10 +
@@ -1337,6 +1339,36 @@ function buildFullReport(r, idx) {
     (sc.tech    || 0) * 0.25 +
     (sc.sit     || 0) * 0.20
   );
+  return { compat, quality, testScore, overall };
+}
+
+function buildReportsSummaryTable(reports) {
+  const ranked = reports.map((r, i) => ({ r, i, ...computeOverall(r) })).sort((a, b) => b.overall - a.overall);
+  const rows = ranked.map(({ r, i, compat, testScore, overall }) => {
+    const apto = overall >= 65;
+    return `<tr>
+      <td class="cand-name-cell"><a href="#report-card-${i}" style="text-decoration:none;color:inherit">${escapeHtml(r.name)}</a></td>
+      <td>${compat}%</td>
+      <td>${testScore}%</td>
+      <td style="font-weight:700">${overall}%</td>
+      <td>${apto ? '<span class="badge badge-success">✅ Apto</span>' : '<span class="badge badge-danger">❌ No apto</span>'}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="card" style="overflow-x:auto;margin-bottom:24px">
+    <div class="card-title"><span class="card-title-icon">📋</span> Resumen de Candidatos</div>
+    <table class="rank-table">
+      <thead><tr><th>Candidato</th><th>CV</th><th>Prueba</th><th>Global</th><th>Veredicto</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="hint" style="margin-top:10px">Apto = puntaje global ≥ 65%. Es una guía orientativa — revisa el detalle de cada candidato antes de decidir.</p>
+  </div>`;
+}
+
+function buildFullReport(r, idx) {
+  const sc = r.scores;
+  const cv = r.cv || {};
+  const job = r.job || {};
+  const { compat, quality, overall } = computeOverall(r);
 
   const recInfo = overall >= 80
     ? {cls:'rec-high',   label:'🟢 Alta Compatibilidad',   msg:'El candidato cumple de forma destacada los requisitos del cargo y obtuvo excelentes resultados en todas las evaluaciones. Se recomienda avanzar a entrevista.'}
@@ -1359,7 +1391,7 @@ function buildFullReport(r, idx) {
   const missing = cv.missing || [];
   const ts = r.ts ? new Date(r.ts).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}) : '—';
 
-  return `<div style="border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:32px">
+  return `<div id="report-card-${idx}" style="border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:32px;scroll-margin-top:20px">
     <div class="report-header" style="border-radius:0">
       <div class="report-header-info">
         <h2>${escapeHtml(r.name)}</h2>
