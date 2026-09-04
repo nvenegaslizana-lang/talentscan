@@ -6,7 +6,7 @@ function blobOptions() {
 
 function openStore(getStore, name) {
   const opts = blobOptions();
-  return opts ? getStore(name, opts) : getStore(name);
+  return opts ? getStore(Object.assign({ name }, opts)) : getStore(name);
 }
 
 module.exports = { blobOptions, openStore };
