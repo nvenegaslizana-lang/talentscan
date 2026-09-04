@@ -509,7 +509,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
    STATE
 ═══════════════════════════════════════════════════════════ */
 const S = {
-  job: { title:'', dept:'', exp:0, edu:'', skills:[], desc:'' },
+  job: { title:'', dept:'', exp:0, edu:'', skills:[], desc:'', id:'', readKey:'' },
   candidates: [],   // { name, quality, compat, found, missing, sections, wordCount, detYrs, detEdu, selected }
   reports: [],      // decoded result objects
   cand: {
@@ -547,6 +547,26 @@ function loadRecruiterState() {
   } catch(e) { /* datos corruptos — se ignora */ }
 }
 
+function genId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12);
+}
+
+function ensureJobKeys() {
+  let changed = false;
+  if (!S.job.id) { S.job.id = genId(); changed = true; }
+  if (!S.job.readKey) { S.job.readKey = genId(); changed = true; }
+  if (changed) registerJobRemote();
+}
+
+function registerJobRemote() {
+  fetch('/.netlify/functions/register-job', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jobId: S.job.id, readKey: S.job.readKey })
+  }).catch(() => { /* sin conexión — se reintenta la próxima vez que se guarde el cargo */ });
+}
+
 function resetProcess() {
   if (!confirm('¿Borrar el cargo, los candidatos y los informes guardados en este navegador? Esta acción no se puede deshacer.')) return;
   try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
@@ -555,6 +575,7 @@ function resetProcess() {
 
 function restoreRecruiterUI() {
   if (S.job.title) {
+    ensureJobKeys();
     const elTitle = document.getElementById('job-title');
     const elDept  = document.getElementById('job-dept');
     const elExp   = document.getElementById('job-exp');
@@ -968,7 +989,7 @@ function handleHashRoute() {
       const raw = JSON.parse(decodeURIComponent(atob(hash.slice(6))));
       // Support both compact format (j/n/c/q) and legacy format (job/name/cv)
       const payload = raw.j ? {
-        job: { title: raw.j.t||'', dept: raw.j.d||'', exp: raw.j.e||0, edu: raw.j.u||'', skills: raw.j.s||[] },
+        job: { title: raw.j.t||'', dept: raw.j.d||'', exp: raw.j.e||0, edu: raw.j.u||'', skills: raw.j.s||[], id: raw.j.ji||'' },
         name: raw.n || '',
         cv: { compat: raw.c||0, quality: raw.q||0, found: raw.f||[], missing: raw.m||[], descMatch: raw.dm ?? null }
       } : raw;
@@ -1029,6 +1050,10 @@ function showToast(msg) {
 ═══════════════════════════════════════════════════════════ */
 const SCREENS = ['setup','ranking','links','reports'];
 function goScreen(id) {
+  if (id !== 'reports' && _reportsPollInterval) {
+    clearInterval(_reportsPollInterval);
+    _reportsPollInterval = null;
+  }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + id);
   if (el) el.classList.add('active');
@@ -1086,6 +1111,7 @@ function saveJob() {
   S.job.exp   = parseInt(document.getElementById('job-exp').value) || 0;
   S.job.edu   = document.getElementById('job-edu').value;
   S.job.desc  = document.getElementById('job-desc').value.trim();
+  ensureJobKeys();
 
   // Mark step 1 done, unlock step 2
   document.getElementById('nav-setup').classList.remove('active');
@@ -1288,7 +1314,7 @@ function generateEvalLink(cand) {
   if (!base) return null;
   // Minimal payload — short keys to keep URL corta
   const payload = {
-    j: { t: S.job.title, d: S.job.dept, e: S.job.exp, u: S.job.edu, s: S.job.skills },
+    j: { t: S.job.title, d: S.job.dept, e: S.job.exp, u: S.job.edu, s: S.job.skills, ji: S.job.id },
     n: cand.name,
     c: cand.compat,
     q: cand.quality,
@@ -1389,13 +1415,45 @@ function submitResultsCode() {
 /* ═══════════════════════════════════════════════════════════
    STEP 4 — VER INFORMES
 ═══════════════════════════════════════════════════════════ */
+let _reportsPollInterval = null;
+
 function renderReportsScreen() {
+  renderReportsList();
+  if (S.job.id && S.job.readKey) {
+    if (_reportsPollInterval) clearInterval(_reportsPollInterval);
+    fetchRemoteResults();
+    _reportsPollInterval = setInterval(fetchRemoteResults, 20000);
+  }
+}
+
+function renderReportsList() {
   const container = document.getElementById('reports-list');
   if (S.reports.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><p style="font-weight:600;margin-bottom:6px">Aún no hay informes</p><p style="font-size:13px">Ingresa un código de resultados en el Paso 3.</p></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><p style="font-weight:600;margin-bottom:6px">Aún no hay informes</p><p style="font-size:13px">Los informes llegan solos apenas un candidato termina su evaluación.</p></div>`;
     return;
   }
   container.innerHTML = buildReportsSummaryTable(S.reports) + S.reports.map((r, i) => buildFullReport(r, i)).join('');
+}
+
+async function fetchRemoteResults() {
+  if (!S.job.id || !S.job.readKey) return;
+  try {
+    const res = await fetch('/.netlify/functions/get-results?jobId=' + encodeURIComponent(S.job.id) + '&readKey=' + encodeURIComponent(S.job.readKey));
+    if (!res.ok) return;
+    const data = await res.json();
+    const remote = data.results || [];
+    let added = false;
+    remote.forEach(r => {
+      const exists = S.reports.some(x => x.name === r.name && x.email === r.email && x.ts === r.ts);
+      if (!exists) { S.reports.push(r); added = true; }
+    });
+    if (added) {
+      saveRecruiterState();
+      renderReportsList();
+      document.getElementById('nav-links')?.classList.remove('locked');
+      document.getElementById('nav-reports')?.classList.remove('locked');
+    }
+  } catch(e) { /* sin conexión — se reintenta en el próximo ciclo */ }
 }
 
 function escapeHtml(str) {
@@ -1433,7 +1491,10 @@ function buildReportsSummaryTable(reports) {
     </tr>`;
   }).join('');
   return `<div class="card" style="overflow-x:auto;margin-bottom:24px">
-    <div class="card-title"><span class="card-title-icon">📋</span> Resumen de Candidatos</div>
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span><span class="card-title-icon">📋</span> Resumen de Candidatos</span>
+      <button class="btn btn-secondary btn-sm" onclick="fetchRemoteResults()">🔄 Actualizar</button>
+    </div>
     <table class="rank-table">
       <thead><tr><th>Candidato</th><th>CV</th><th>Prueba</th><th>Global</th><th>Veredicto</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -1800,27 +1861,28 @@ function scoreModule(m) {
 ═══════════════════════════════════════════════════════════ */
 function renderDone() {
   updateCandProgress();
-  const link = buildResultsLink();
+  const payload = buildResultsPayload();
+  const link = buildResultsLinkFromPayload(payload);
   document.getElementById('cand-screen').innerHTML = `
     <div class="done-card">
       <div class="done-icon">🎉</div>
       <h2 style="font-size:22px;margin-bottom:10px">¡Evaluación Completada!</h2>
       <p style="color:var(--txt-2);margin-bottom:24px">Gracias, <strong>${S.cand.name}</strong>. Tus respuestas han sido registradas exitosamente.</p>
+      <div id="auto-submit-status" style="font-size:13px;color:var(--txt-2);margin-bottom:16px">📡 Enviando resultado al reclutador…</div>
       <div style="background:var(--card);border-radius:10px;padding:20px;text-align:left;margin-bottom:24px">
-        <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">📎 Envía este link al reclutador</div>
-        <p style="font-size:13px;color:var(--txt-2);margin-bottom:10px">Copia el siguiente link y envíalo por WhatsApp, correo o el medio que prefieras:</p>
+        <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">📎 Link de respaldo</div>
+        <p style="font-size:13px;color:var(--txt-2);margin-bottom:10px">Por si acaso, también puedes copiar este link y enviarlo por WhatsApp o correo:</p>
         <div class="link-url-box" id="results-link-display">${link}</div>
         <button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="copyResultsLink()">📋 Copiar Link de Resultados</button>
       </div>
-      <p style="font-size:13px;color:var(--txt-2)">El equipo de selección revisará tu evaluación al abrir ese link y se pondrá en contacto contigo pronto.</p>
+      <p style="font-size:13px;color:var(--txt-2)">El equipo de selección revisará tu evaluación y se pondrá en contacto contigo pronto.</p>
     </div>`;
+  submitResultAuto(payload);
 }
 
-function buildResultsLink() {
-  // Use the same base URL as the eval link so the recruiter can open it
-  const base = (typeof getBaseUrl === 'function' ? getBaseUrl() : null)
-    || window.location.href.replace(/#.*/, '');
-  const payload = {
+function buildResultsPayload() {
+  return {
+    jobId: S.cand.jobData?.job?.id || '',
     v: 1,
     name: S.cand.name,
     email: S.cand.email,
@@ -1830,9 +1892,38 @@ function buildResultsLink() {
     scores: S.cand.scores,
     ts: Date.now()
   };
+}
+
+function buildResultsLinkFromPayload(payload) {
+  const base = (typeof getBaseUrl === 'function' ? getBaseUrl() : null)
+    || window.location.href.replace(/#.*/, '');
   try {
     return base + '#report=' + btoa(encodeURIComponent(JSON.stringify(payload)));
   } catch(e) { return ''; }
+}
+
+function buildResultsLink() {
+  return buildResultsLinkFromPayload(buildResultsPayload());
+}
+
+function submitResultAuto(payload) {
+  const statusEl = document.getElementById('auto-submit-status');
+  if (!payload.jobId) {
+    if (statusEl) statusEl.textContent = 'ℹ️ Usa el link de abajo para enviar tu resultado.';
+    return;
+  }
+  fetch('/.netlify/functions/submit-result', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(res => {
+    if (!statusEl) return;
+    statusEl.textContent = res.ok
+      ? '✅ Resultado enviado automáticamente al reclutador'
+      : '⚠️ No se pudo enviar automático — igual puedes usar el link de abajo';
+  }).catch(() => {
+    if (statusEl) statusEl.textContent = '⚠️ No se pudo enviar automático — igual puedes usar el link de abajo';
+  });
 }
 
 function copyResultsLink() {

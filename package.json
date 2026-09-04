@@ -1,0 +1,9 @@
+{
+  "name": "talentscan",
+  "private": true,
+  "version": "1.0.0",
+  "description": "TalentScan - plataforma de reclutamiento HR",
+  "dependencies": {
+    "@netlify/blobs": "8.1.0"
+  }
+}
