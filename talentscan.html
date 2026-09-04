@@ -1315,6 +1315,11 @@ function buildFullReport(r, idx) {
           ${cv.descMatch !== null && cv.descMatch !== undefined ? `<div class="info-row"><span class="info-row-key">Coincidencia con descripción del cargo</span><span class="info-row-val">${cv.descMatch}%</span></div>` : ''}
         </div>
       </div>
+      ${r.salary ? `
+      <div class="card" style="background:rgba(217,119,6,.06);border:1px solid rgba(217,119,6,.25)">
+        <div class="card-title"><span class="card-title-icon">🔒</span> Información Confidencial <span style="font-weight:400;font-size:12px;color:var(--txt-2);margin-left:6px">— solo visible en tu informe</span></div>
+        <div class="info-row"><span class="info-row-key">Pretensión de renta mensual</span><span class="info-row-val">${escapeHtml(r.salary)}</span></div>
+      </div>` : ''}
       <div class="card">
         <div class="card-title"><span class="card-title-icon">🧠</span> Perfil Conductual DISC</div>
         <div class="disc-grid">
@@ -1444,6 +1449,7 @@ function renderWelcome() {
       <div class="welcome-fields">
         <div><label>Tu nombre completo</label><input type="text" id="cand-name" value="${preName}" placeholder="Nombre Apellido"></div>
         <div><label>Correo electrónico</label><input type="email" id="cand-email" placeholder="nombre@email.com"></div>
+        <div><label>Pretensión de renta mensual (opcional)</label><input type="text" id="cand-salary" placeholder="Ej: $800.000"></div>
       </div>
       <button class="btn btn-primary btn-lg" style="width:100%" onclick="startEval()">Comenzar Evaluación →</button>
     </div>`;
@@ -1456,6 +1462,7 @@ function startEval() {
   if (!email || !email.includes('@')) { alert('Por favor ingresa un correo válido.'); return; }
   S.cand.name  = name;
   S.cand.email = email;
+  S.cand.salary = document.getElementById('cand-salary')?.value.trim() || '';
   S.cand.module = 0;
   S.cand.introShown = false;
   renderCandidateScreen();
@@ -1631,6 +1638,7 @@ function buildResultsLink() {
     v: 1,
     name: S.cand.name,
     email: S.cand.email,
+    salary: S.cand.salary || '',
     job: S.cand.jobData?.job || {},
     cv:  S.cand.jobData?.cv  || {},
     scores: S.cand.scores,
