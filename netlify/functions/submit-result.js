@@ -1,4 +1,5 @@
 const { getStore } = require('@netlify/blobs');
+const { openStore } = require('./_util');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -13,7 +14,7 @@ exports.handler = async (event) => {
         body: JSON.stringify({ error: 'Missing jobId or name' })
       };
     }
-    const store = getStore('talentscan-results');
+    const store = openStore(getStore, 'talentscan-results');
     const key = body.jobId + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
     await store.setJSON(key, body);
     return {

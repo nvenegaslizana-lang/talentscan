@@ -1,4 +1,5 @@
 const { getStore } = require('@netlify/blobs');
+const { openStore } = require('./_util');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') {
@@ -14,7 +15,7 @@ exports.handler = async (event) => {
     };
   }
   try {
-    const metaStore = getStore('talentscan-meta');
+    const metaStore = openStore(getStore, 'talentscan-meta');
     const meta = await metaStore.get(jobId, { type: 'json' });
     if (!meta || meta.readKey !== readKey) {
       return {
@@ -23,7 +24,7 @@ exports.handler = async (event) => {
         body: JSON.stringify({ error: 'Invalid credentials' })
       };
     }
-    const store = getStore('talentscan-results');
+    const store = openStore(getStore, 'talentscan-results');
     const { blobs } = await store.list({ prefix: jobId + '/' });
     const results = await Promise.all(blobs.map((b) => store.get(b.key, { type: 'json' })));
     return {

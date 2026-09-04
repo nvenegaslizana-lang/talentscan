@@ -1,4 +1,5 @@
 const { getStore } = require('@netlify/blobs');
+const { openStore } = require('./_util');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -14,7 +15,7 @@ exports.handler = async (event) => {
         body: JSON.stringify({ error: 'Missing jobId or readKey' })
       };
     }
-    const metaStore = getStore('talentscan-meta');
+    const metaStore = openStore(getStore, 'talentscan-meta');
     await metaStore.setJSON(jobId, { readKey, createdAt: Date.now() });
     return {
       statusCode: 200,
