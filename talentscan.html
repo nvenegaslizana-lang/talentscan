@@ -536,6 +536,7 @@ function saveRecruiterState() {
       reports: S.reports
     }));
   } catch(e) { /* almacenamiento lleno o no disponible — se ignora */ }
+  syncJobStateToBackend();
 }
 
 function loadRecruiterState() {
@@ -562,11 +563,35 @@ function ensureJobKeys() {
 }
 
 function registerJobRemote() {
+  syncJobStateToBackend();
+}
+
+function syncJobStateToBackend() {
+  if (!S.job.id || !S.job.readKey) return;
   fetch('/.netlify/functions/register-job', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jobId: S.job.id, readKey: S.job.readKey })
-  }).catch(() => { /* sin conexión — se reintenta la próxima vez que se guarde el cargo */ });
+    body: JSON.stringify({ jobId: S.job.id, readKey: S.job.readKey, job: S.job, candidates: S.candidates })
+  }).catch(() => { /* sin conexión — se reintenta en el próximo cambio */ });
+}
+
+async function syncJobAndCandidatesFromBackend() {
+  if (!S.job.id || !S.job.readKey) return;
+  try {
+    const res = await fetch('/.netlify/functions/get-results?jobId=' + encodeURIComponent(S.job.id) + '&readKey=' + encodeURIComponent(S.job.readKey));
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.job && Object.keys(data.job).length) Object.assign(S.job, data.job, { id: S.job.id, readKey: S.job.readKey });
+    if (Array.isArray(data.candidates) && data.candidates.length) S.candidates = data.candidates;
+    (data.results || []).forEach(r => {
+      const exists = S.reports.some(x => x.name === r.name && x.email === r.email && x.ts === r.ts);
+      if (!exists) S.reports.push(r);
+    });
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ job: S.job, candidates: S.candidates, reports: S.reports }));
+    } catch(e) {}
+    restoreRecruiterUI();
+  } catch(e) { /* sin conexión — sigue con lo que haya local */ }
 }
 
 function resetProcess() {
@@ -1025,14 +1050,11 @@ function handleHashRoute() {
         S.job.id = raw.ji;
         S.job.readKey = raw.rk;
         S.job.title = raw.jt || S.job.title;
-        saveRecruiterState();
-        ['ranking','links','reports'].forEach(s => {
-          const n = document.getElementById('nav-' + s);
-          if (n) n.classList.remove('locked');
+        syncJobAndCandidatesFromBackend().then(() => {
+          goScreen('reports');
+          document.getElementById('nav-reports')?.classList.add('active');
+          renderReportsScreen();
         });
-        goScreen('reports');
-        document.getElementById('nav-reports').classList.add('active');
-        renderReportsScreen();
       }
     } catch(e) {
       console.error('Invalid recruiter link:', e);
@@ -1042,6 +1064,7 @@ function handleHashRoute() {
 function initApp() {
   loadRecruiterState();
   restoreRecruiterUI();
+  if (S.job.id && S.job.readKey) syncJobAndCandidatesFromBackend();
   handleHashRoute();
 }
 window.addEventListener('load', initApp);
@@ -1464,8 +1487,8 @@ function renderDeviceLinkBox() {
   const link = buildRecruiterLink();
   box.innerHTML = `
     <div class="card" style="background:rgba(8,145,178,.06);border:1px solid rgba(8,145,178,.25);margin-bottom:20px">
-      <div class="card-title"><span class="card-title-icon">📱</span> Ver este cargo desde otro dispositivo</div>
-      <p style="font-size:13px;color:var(--txt-2);margin-bottom:10px">Abre este link en tu celular, tablet u otro computador para ver los mismos informes en vivo. <strong>Es como una llave — solo compártelo contigo mismo</strong>, no con candidatos ni terceros.</p>
+      <div class="card-title"><span class="card-title-icon">📱</span> Usar este cargo desde otro dispositivo</div>
+      <p style="font-size:13px;color:var(--txt-2);margin-bottom:10px">Abre este link en tu celular, tablet u otro computador para configurar el cargo, ver el ranking de CVs, generar links y revisar informes — todo igual que aquí. <strong>Es como una llave — solo compártelo contigo mismo</strong>, no con candidatos ni terceros.</p>
       <div class="link-url-box" id="device-link-display">${link}</div>
       <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="copyDeviceLink()">📋 Copiar link</button>
     </div>`;

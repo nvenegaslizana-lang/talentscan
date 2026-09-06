@@ -7,7 +7,7 @@ exports.handler = async (event) => {
   }
   try {
     const body = JSON.parse(event.body || '{}');
-    const { jobId, readKey } = body;
+    const { jobId, readKey, job, candidates } = body;
     if (!jobId || !readKey) {
       return {
         statusCode: 400,
@@ -16,7 +16,22 @@ exports.handler = async (event) => {
       };
     }
     const metaStore = openStore(getStore, 'talentscan-meta');
-    await metaStore.setJSON(jobId, { readKey, createdAt: Date.now() });
+    const existing = await metaStore.get(jobId, { type: 'json' });
+    if (existing && existing.readKey !== readKey) {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Invalid credentials' })
+      };
+    }
+    const merged = {
+      readKey,
+      job: job !== undefined ? job : (existing ? existing.job : {}),
+      candidates: candidates !== undefined ? candidates : (existing ? existing.candidates : []),
+      createdAt: existing ? existing.createdAt : Date.now(),
+      updatedAt: Date.now()
+    };
+    await metaStore.setJSON(jobId, merged);
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },

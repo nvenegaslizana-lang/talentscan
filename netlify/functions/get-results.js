@@ -30,7 +30,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ results: results.filter(Boolean) })
+      body: JSON.stringify({ results: results.filter(Boolean), job: meta.job || {}, candidates: meta.candidates || [] })
     };
   } catch (e) {
     return {
