@@ -282,8 +282,11 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
       <button class="theme-toggle" onclick="toggleTheme()">
         <span id="theme-icon">🌙</span> Cambiar tema
       </button>
-      <button class="theme-toggle" onclick="resetProcess()" title="Borra el cargo, candidatos e informes guardados en este navegador">
-        🗑️ Nuevo proceso de selección
+      <button class="theme-toggle" onclick="showArchive()" title="Ver postulaciones anteriores guardadas">
+        📁 Postulaciones anteriores
+      </button>
+      <button class="theme-toggle" onclick="resetProcess()" title="Guarda el cargo actual en el historial y empieza uno nuevo">
+        ➕ Nuevo proceso de selección
       </button>
     </div>
   </aside>
@@ -511,7 +514,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
    STATE
 ═══════════════════════════════════════════════════════════ */
 const S = {
-  job: { title:'', dept:'', exp:0, edu:'', skills:[], desc:'', id:'', readKey:'' },
+  job: { title:'', dept:'', exp:0, edu:'', skills:[], desc:'', id:'', readKey:'', hiredName:'' },
   candidates: [],   // { name, quality, compat, found, missing, sections, wordCount, detYrs, detEdu, selected }
   reports: [],      // decoded result objects
   cand: {
@@ -548,6 +551,82 @@ function loadRecruiterState() {
     if (Array.isArray(data.candidates)) S.candidates = data.candidates;
     if (Array.isArray(data.reports)) S.reports = data.reports;
   } catch(e) { /* datos corruptos — se ignora */ }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HISTORIAL DE POSTULACIONES — cada proceso de selección
+   (cargo + candidatos + informes) queda guardado, no se borra
+═══════════════════════════════════════════════════════════ */
+const ARCHIVE_KEY = 'talentscan_archive_v1';
+S.archive = [];
+
+function loadArchive() {
+  try {
+    const raw = localStorage.getItem(ARCHIVE_KEY);
+    S.archive = raw ? JSON.parse(raw) : [];
+  } catch(e) { S.archive = []; }
+}
+
+function saveArchive() {
+  try { localStorage.setItem(ARCHIVE_KEY, JSON.stringify(S.archive)); } catch(e) {}
+}
+
+function archiveCurrentJob() {
+  if (!S.job.title) return;
+  S.archive.unshift({
+    archivedAt: Date.now(),
+    job: JSON.parse(JSON.stringify(S.job)),
+    candidates: JSON.parse(JSON.stringify(S.candidates)),
+    reports: JSON.parse(JSON.stringify(S.reports))
+  });
+  saveArchive();
+}
+
+function showArchive() {
+  const rows = S.archive.length === 0
+    ? '<p style="color:var(--txt-2);font-size:14px">Todavía no hay postulaciones anteriores guardadas.</p>'
+    : S.archive.map((a, i) => `
+      <div style="padding:14px;border:1px solid var(--border,#e5e5e5);border-radius:10px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <div>
+          <strong>${escapeHtml(a.job.title || 'Sin título')}</strong><br>
+          <span style="font-size:12px;color:var(--txt-2)">${new Date(a.archivedAt).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})} · ${a.candidates.length} candidato(s)${a.job.hiredName ? ' · 🏆 Contratado: ' + escapeHtml(a.job.hiredName) : ''}</span>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="reopenArchived(${i})">Reabrir</button>
+      </div>`).join('');
+  const overlay = document.createElement('div');
+  overlay.id = 'archive-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.onclick = (e) => { if (e.target === overlay) closeArchiveModal(); };
+  overlay.innerHTML = `
+    <div style="background:var(--bg,#fff);border-radius:12px;max-width:640px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border,#e5e5e5);display:flex;justify-content:space-between;align-items:center">
+        <strong>📁 Postulaciones anteriores</strong>
+        <button onclick="closeArchiveModal()" style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--txt-2,#888)">×</button>
+      </div>
+      <div style="padding:20px;overflow-y:auto">${rows}</div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function closeArchiveModal() {
+  document.getElementById('archive-modal-overlay')?.remove();
+}
+
+function reopenArchived(i) {
+  const entry = S.archive[i];
+  if (!entry) return;
+  if (!confirm('Esto reemplaza el proceso activo actual por "' + (entry.job.title||'') + '" (el actual quedará guardado en el historial). ¿Continuar?')) return;
+  archiveCurrentJob();
+  S.archive = S.archive.filter(x => x !== entry);
+  saveArchive();
+  Object.assign(S.job, entry.job);
+  S.candidates = entry.candidates;
+  S.reports = entry.reports;
+  saveRecruiterState();
+  closeArchiveModal();
+  restoreRecruiterUI();
+  goScreen('setup');
+  showToast('✅ Postulación reabierta: ' + (S.job.title||''));
 }
 
 function genId() {
@@ -595,7 +674,8 @@ async function syncJobAndCandidatesFromBackend() {
 }
 
 function resetProcess() {
-  if (!confirm('¿Borrar el cargo, los candidatos y los informes guardados en este navegador? Esta acción no se puede deshacer.')) return;
+  if (!confirm('¿Empezar un nuevo proceso de selección? El cargo actual (' + (S.job.title || 'sin nombre') + ') quedará guardado en "Postulaciones anteriores", no se pierde.')) return;
+  archiveCurrentJob();
   try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
   window.location.href = window.location.href.replace(/#.*/, '');
 }
@@ -1063,6 +1143,7 @@ function handleHashRoute() {
 }
 function initApp() {
   loadRecruiterState();
+  loadArchive();
   restoreRecruiterUI();
   if (S.job.id && S.job.readKey) syncJobAndCandidatesFromBackend();
   handleHashRoute();
@@ -1248,7 +1329,7 @@ function addCandidateToRanking() {
   if (text.length < 50) { alert('Por favor sube o pega el CV del candidato (mínimo 50 caracteres).'); return; }
 
   const analysis = analyzeCV(text);
-  S.candidates.push({ name, ...analysis, selected: false });
+  S.candidates.push({ name, ...analysis, text, selected: false });
   S.candidates.sort((a,b) => b.compat - a.compat);
 
   // Reset form
@@ -1286,7 +1367,7 @@ function renderRankingScreen() {
       : '';
     return `<tr>
       <td><span class="rank-num ${rankClass}">${i+1}</span></td>
-      <td class="cand-name-cell">${c.name}</td>
+      <td class="cand-name-cell">${escapeHtml(c.name)}<br><button class="btn btn-secondary btn-sm" style="margin-top:4px;padding:2px 8px;font-size:12px" onclick="viewCandidateCV(${i})">👁️ Ver CV</button></td>
       <td>
         <div style="font-weight:700;color:${compatColor}">${c.compat}%</div>
         <div class="compat-bar-wrap">
@@ -1306,6 +1387,28 @@ function renderRankingScreen() {
 function toggleSelect(i) {
   S.candidates[i].selected = !S.candidates[i].selected;
   saveRecruiterState();
+}
+
+function viewCandidateCV(i) {
+  const c = S.candidates[i];
+  if (!c) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'cv-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.onclick = (e) => { if (e.target === overlay) closeCVModal(); };
+  overlay.innerHTML = `
+    <div style="background:var(--bg,#fff);border-radius:12px;max-width:640px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border,#e5e5e5);display:flex;justify-content:space-between;align-items:center">
+        <strong>${escapeHtml(c.name)} — CV</strong>
+        <button onclick="closeCVModal()" style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--txt-2,#888)">×</button>
+      </div>
+      <div style="padding:20px;overflow-y:auto;white-space:pre-wrap;font-size:13px;line-height:1.6">${escapeHtml(c.text) || 'No se guardó el texto de este CV (fue agregado antes de esta función — súbelo de nuevo para poder verlo).'}</div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function closeCVModal() {
+  document.getElementById('cv-modal-overlay')?.remove();
 }
 
 function goToLinks() {
@@ -1512,7 +1615,10 @@ function renderReportsList() {
     container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><p style="font-weight:600;margin-bottom:6px">Aún no hay informes</p><p style="font-size:13px">Los informes llegan solos apenas un candidato termina su evaluación.</p></div>`;
     return;
   }
-  container.innerHTML = buildReportsSummaryTable(S.reports) + S.reports.map((r, i) => buildFullReport(r, i)).join('');
+  const hiredBanner = S.job.hiredName
+    ? `<div class="card" style="background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.3);margin-bottom:16px"><strong>🏆 Candidato contratado para este cargo:</strong> ${escapeHtml(S.job.hiredName)}</div>`
+    : '';
+  container.innerHTML = hiredBanner + buildReportsSummaryTable(S.reports) + S.reports.map((r, i) => buildFullReport(r, i)).join('');
 }
 
 async function fetchRemoteResults() {
@@ -1562,12 +1668,17 @@ function buildReportsSummaryTable(reports) {
   const ranked = reports.map((r, i) => ({ r, i, ...computeOverall(r) })).sort((a, b) => b.overall - a.overall);
   const rows = ranked.map(({ r, i, compat, testScore, overall }) => {
     const apto = overall >= 65;
+    const isHired = S.job.hiredName === r.name;
+    const hireCell = isHired
+      ? '<span class="badge badge-success">🏆 Contratado</span>'
+      : `<button class="btn btn-secondary btn-sm" onclick="markHired(${i})">Marcar contratado</button>`;
     return `<tr>
       <td class="cand-name-cell"><a href="#report-card-${i}" style="text-decoration:none;color:inherit">${escapeHtml(r.name)}</a></td>
       <td>${compat}%</td>
       <td>${testScore}%</td>
       <td style="font-weight:700">${overall}%</td>
       <td>${apto ? '<span class="badge badge-success">✅ Apto</span>' : '<span class="badge badge-danger">❌ No apto</span>'}</td>
+      <td>${hireCell}</td>
     </tr>`;
   }).join('');
   return `<div class="card" style="overflow-x:auto;margin-bottom:24px">
@@ -1576,11 +1687,20 @@ function buildReportsSummaryTable(reports) {
       <button class="btn btn-secondary btn-sm" onclick="fetchRemoteResults()">🔄 Actualizar</button>
     </div>
     <table class="rank-table">
-      <thead><tr><th>Candidato</th><th>CV</th><th>Prueba</th><th>Global</th><th>Veredicto</th></tr></thead>
+      <thead><tr><th>Candidato</th><th>CV</th><th>Prueba</th><th>Global</th><th>Veredicto</th><th>Contratación</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <p class="hint" style="margin-top:10px">Apto = puntaje global ≥ 65%. Es una guía orientativa — revisa el detalle de cada candidato antes de decidir.</p>
   </div>`;
+}
+
+function markHired(idx) {
+  const r = S.reports[idx];
+  if (!r) return;
+  S.job.hiredName = r.name;
+  saveRecruiterState();
+  renderReportsList();
+  showToast('🏆 ' + r.name + ' marcado como contratado');
 }
 
 function buildFullReport(r, idx) {
