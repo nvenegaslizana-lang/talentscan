@@ -477,6 +477,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
       <h1 class="page-title">Informes de Candidatos</h1>
       <p class="page-sub">Resultados completos de los candidatos evaluados. Los informes se cargan automáticamente al abrir el link que te envía el candidato.</p>
 
+      <div id="device-link-box"></div>
+
       <div id="reports-list"></div>
 
       <div style="margin-top:16px">
@@ -1016,6 +1018,25 @@ function handleHashRoute() {
     } catch(e) {
       console.error('Invalid report link:', e);
     }
+  } else if (hash.startsWith('#recruiter=')) {
+    try {
+      const raw = JSON.parse(decodeURIComponent(atob(hash.slice(11))));
+      if (raw.ji && raw.rk) {
+        S.job.id = raw.ji;
+        S.job.readKey = raw.rk;
+        S.job.title = raw.jt || S.job.title;
+        saveRecruiterState();
+        ['ranking','links','reports'].forEach(s => {
+          const n = document.getElementById('nav-' + s);
+          if (n) n.classList.remove('locked');
+        });
+        goScreen('reports');
+        document.getElementById('nav-reports').classList.add('active');
+        renderReportsScreen();
+      }
+    } catch(e) {
+      console.error('Invalid recruiter link:', e);
+    }
   }
 }
 function initApp() {
@@ -1419,11 +1440,47 @@ let _reportsPollInterval = null;
 
 function renderReportsScreen() {
   renderReportsList();
+  renderDeviceLinkBox();
   if (S.job.id && S.job.readKey) {
     if (_reportsPollInterval) clearInterval(_reportsPollInterval);
     fetchRemoteResults();
     _reportsPollInterval = setInterval(fetchRemoteResults, 20000);
   }
+}
+
+function buildRecruiterLink() {
+  const base = (typeof getBaseUrl === 'function' ? getBaseUrl() : null)
+    || window.location.href.replace(/#.*/, '');
+  const payload = { ji: S.job.id, rk: S.job.readKey, jt: S.job.title };
+  try {
+    return base + '#recruiter=' + btoa(encodeURIComponent(JSON.stringify(payload)));
+  } catch(e) { return ''; }
+}
+
+function renderDeviceLinkBox() {
+  const box = document.getElementById('device-link-box');
+  if (!box) return;
+  if (!S.job.id || !S.job.readKey) { box.innerHTML = ''; return; }
+  const link = buildRecruiterLink();
+  box.innerHTML = `
+    <div class="card" style="background:rgba(8,145,178,.06);border:1px solid rgba(8,145,178,.25);margin-bottom:20px">
+      <div class="card-title"><span class="card-title-icon">📱</span> Ver este cargo desde otro dispositivo</div>
+      <p style="font-size:13px;color:var(--txt-2);margin-bottom:10px">Abre este link en tu celular, tablet u otro computador para ver los mismos informes en vivo. <strong>Es como una llave — solo compártelo contigo mismo</strong>, no con candidatos ni terceros.</p>
+      <div class="link-url-box" id="device-link-display">${link}</div>
+      <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="copyDeviceLink()">📋 Copiar link</button>
+    </div>`;
+}
+
+function copyDeviceLink() {
+  const link = document.getElementById('device-link-display')?.textContent;
+  if (!link) return;
+  navigator.clipboard.writeText(link).then(() => showToast('✅ Link copiado')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = link; ta.style.position='fixed'; ta.style.top='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('✅ Link copiado');
+  });
 }
 
 function renderReportsList() {
