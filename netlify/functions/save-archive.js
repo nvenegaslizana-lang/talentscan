@@ -1,0 +1,44 @@
+const { getStore } = require('@netlify/blobs');
+const { openStore } = require('./_util');
+
+exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method not allowed' };
+  }
+  try {
+    const body = JSON.parse(event.body || '{}');
+    const { recruiterId, recruiterKey, archive } = body;
+    if (!recruiterId || !recruiterKey) {
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Missing recruiterId or recruiterKey' })
+      };
+    }
+    const store = openStore(getStore, 'talentscan-archive');
+    const existing = await store.get(recruiterId, { type: 'json' });
+    if (existing && existing.recruiterKey !== recruiterKey) {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Invalid credentials' })
+      };
+    }
+    await store.setJSON(recruiterId, {
+      recruiterKey,
+      archive: Array.isArray(archive) ? archive : [],
+      updatedAt: Date.now()
+    });
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: true })
+    };
+  } catch (e) {
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Server error' })
+    };
+  }
+};

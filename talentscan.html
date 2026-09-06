@@ -558,7 +558,23 @@ function loadRecruiterState() {
    (cargo + candidatos + informes) queda guardado, no se borra
 ═══════════════════════════════════════════════════════════ */
 const ARCHIVE_KEY = 'talentscan_archive_v1';
+const RECRUITER_ID_KEY = 'talentscan_recruiter_identity_v1';
 S.archive = [];
+S.recruiterId = '';
+S.recruiterKey = '';
+
+function ensureRecruiterIdentity() {
+  try {
+    const raw = localStorage.getItem(RECRUITER_ID_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data.id && data.key) { S.recruiterId = data.id; S.recruiterKey = data.key; return; }
+    }
+  } catch(e) {}
+  S.recruiterId = genId();
+  S.recruiterKey = genId();
+  try { localStorage.setItem(RECRUITER_ID_KEY, JSON.stringify({ id: S.recruiterId, key: S.recruiterKey })); } catch(e) {}
+}
 
 function loadArchive() {
   try {
@@ -569,6 +585,31 @@ function loadArchive() {
 
 function saveArchive() {
   try { localStorage.setItem(ARCHIVE_KEY, JSON.stringify(S.archive)); } catch(e) {}
+  syncArchiveToBackend();
+}
+
+function syncArchiveToBackend() {
+  if (!S.recruiterId || !S.recruiterKey) return;
+  fetch('/.netlify/functions/save-archive', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recruiterId: S.recruiterId, recruiterKey: S.recruiterKey, archive: S.archive })
+  }).catch(() => { /* sin conexión — se reintenta en el próximo cambio */ });
+}
+
+async function fetchArchiveFromBackend() {
+  if (!S.recruiterId || !S.recruiterKey) return;
+  try {
+    const res = await fetch('/.netlify/functions/get-archive?recruiterId=' + encodeURIComponent(S.recruiterId) + '&recruiterKey=' + encodeURIComponent(S.recruiterKey));
+    if (!res.ok) return;
+    const data = await res.json();
+    if (Array.isArray(data.archive) && data.archive.length) {
+      const known = new Set(S.archive.map(a => a.archivedAt));
+      data.archive.forEach(a => { if (!known.has(a.archivedAt)) S.archive.push(a); });
+      S.archive.sort((a,b) => b.archivedAt - a.archivedAt);
+      try { localStorage.setItem(ARCHIVE_KEY, JSON.stringify(S.archive)); } catch(e) {}
+    }
+  } catch(e) { /* sin conexión — sigue con lo que haya local */ }
 }
 
 function archiveCurrentJob() {
@@ -1130,7 +1171,12 @@ function handleHashRoute() {
         S.job.id = raw.ji;
         S.job.readKey = raw.rk;
         S.job.title = raw.jt || S.job.title;
-        syncJobAndCandidatesFromBackend().then(() => {
+        if (raw.ai && raw.ak) {
+          S.recruiterId = raw.ai;
+          S.recruiterKey = raw.ak;
+          try { localStorage.setItem(RECRUITER_ID_KEY, JSON.stringify({ id: S.recruiterId, key: S.recruiterKey })); } catch(e) {}
+        }
+        Promise.all([syncJobAndCandidatesFromBackend(), fetchArchiveFromBackend()]).then(() => {
           goScreen('reports');
           document.getElementById('nav-reports')?.classList.add('active');
           renderReportsScreen();
@@ -1142,10 +1188,12 @@ function handleHashRoute() {
   }
 }
 function initApp() {
+  ensureRecruiterIdentity();
   loadRecruiterState();
   loadArchive();
   restoreRecruiterUI();
   if (S.job.id && S.job.readKey) syncJobAndCandidatesFromBackend();
+  fetchArchiveFromBackend();
   handleHashRoute();
 }
 window.addEventListener('load', initApp);
@@ -1577,7 +1625,7 @@ function renderReportsScreen() {
 function buildRecruiterLink() {
   const base = (typeof getBaseUrl === 'function' ? getBaseUrl() : null)
     || window.location.href.replace(/#.*/, '');
-  const payload = { ji: S.job.id, rk: S.job.readKey, jt: S.job.title };
+  const payload = { ji: S.job.id, rk: S.job.readKey, jt: S.job.title, ai: S.recruiterId, ak: S.recruiterKey };
   try {
     return base + '#recruiter=' + btoa(encodeURIComponent(JSON.stringify(payload)));
   } catch(e) { return ''; }
